@@ -2,48 +2,55 @@
 
 import pickle
 import os
+import sys
 
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense
 import numpy as np
 
-def main():
+from config.configuration_handler import configuration_handler
+
+def dispatch_jobs():
+    """ Dispatch jobs requested. n_jobs is computed in configuration file. """
     
-    # Load data
-    # Ins: (256, 8), float64
-    # Outs: (256, 1), float64
-    with open("hw1_dataset.pkl", "rb") as fp:
-        hw1_dataset = pickle.load(fp)
+    config_name = get_config_name()
 
-    # Create & train 10 different models
-    prediction_errors = []
-    for i in range(10):
+    config_handler = configuration_handler(config_name)
+    n_jobs = config_handler.get_n_jobs()
 
-        # Build & compile model
-        model = dnn(hidden_sizes=[8, 4, 4], hidden_act="elu", output_act="linear")
-        model.compile(optimizer="adam", loss="mse")
-        model.summary()
+    for i in range(n_jobs):
+        dispatch_job(i, config_name)
 
-        # Train model
-        model.fit(
-                x=hw1_dataset["ins"],
-                y=hw1_dataset["outs"],
-                epochs=3000,
-                batch_size=32
-                )
+def dispatch_job(job_number, config_name):
+    """
+    Dispatch job with specific job number and configuration name. Job number determines which experiment is run
+    from the combination of hyperparameters. Configuration name determines which model is chosen.
+    """
+    script_to_run = get_batch_script_command()
+    process = subprocess.Popen([*script_to_run, "{}".format(job_number), config_name])
 
-        # Predict and calculate absolute error
-        predictions = model.predict(hw1_dataset["ins"])
-        prediction_errors.append( np.squeeze(np.abs(hw1_dataset["outs"] - predictions)) )
+    if get_parallel():
+        process.wait()
 
+def get_config_name():
+    return arg.replace("-cfg=", "")
 
-        # Plot learning curve for this model
-        plot_learning_curve(i, model.history)
+def get_parallel():
 
-    # Compute the absolute prediction errors for all runs, combine the data and generate a histogram of the absolute errors
-    prediction_errors = np.concatenate(prediction_errors, axis=0)
-    create_histogram(prediction_errors)
+    if "-p" in sys.argv:
+        return True
+    else:
+        return False
+
+def get_batch_script_command():
+
+    if "-s" in sys.argv:
+        return ["sbatch", "supercomputer_job.sh"]
+    else:
+        return ["./standard_job.sh"]
+
+#########################
 
 def dnn(hidden_sizes, hidden_act="sigmoid", output_act="tanh"):
     """Construct a simple deep neural network"""
@@ -102,7 +109,7 @@ def plot_learning_curve(experiment_num, history):
 
 
 if __name__ == "__main__":
-    main()
+    dispatch_jobs()
 
 
 
