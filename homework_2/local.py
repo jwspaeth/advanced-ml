@@ -4,6 +4,7 @@ import sys
 import json
 import pickle
 import os
+import subprocess
 
 import matplotlib.pyplot as plt
 
@@ -28,7 +29,7 @@ def main():
     results = []
     for rotation in rotation_list:
         for n_train_folds in n_train_folds_list:
-            with open("results/r{}_t{}/results.pkl".format(rotation, n_train_folds), "rb") as fp:
+            with open("results/r{:02d}_t{:02d}/results.pkl".format(rotation, n_train_folds), "rb") as fp:
                 results.append(pickle.load(fp))
 
     # Compute average fvafs

@@ -120,7 +120,7 @@ def plot_torque(model, data, rotation, n_train_folds):
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
-    save_path += "r{}_t{}/".format(rotation, n_train_folds)
+    save_path += "r{:02d}_t{:02d}/".format(rotation, n_train_folds)
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
@@ -170,7 +170,7 @@ def log(model, data, fold_inds, rotation, n_train_folds):
     fbase = "results/"
     if not os.path.exists(fbase):
         os.mkdir(fbase)
-    fbase += "r{}_t{}/".format(rotation, n_train_folds)
+    fbase += "r{:02d}_t{:02d}/".format(rotation, n_train_folds)
     if not os.path.exists(fbase):
         os.mkdir(fbase)
 
@@ -191,9 +191,6 @@ def process_dataset(dataset, fold_inds):
     processed_data = {}
     for key in fold_inds.keys():
         processed_data[key] = split_dataset(dataset, fold_inds[key])
-
-    print("Train ins shape: {}".format(processed_data["train"]["ins"].shape))
-    print("Train outs shape: {}".format(processed_data["train"]["outs"].shape))
 
     return processed_data
 
@@ -242,9 +239,23 @@ def get_rotation_indices(n_folds, rotation=0):
 
 if __name__ == "__main__":
 
+    # If this is a subprocess, run the training program
     if "-job" in sys.argv:
         rotation, n_train_folds = parse_args()
-        train(rotation=rotation, n_train_folds=n_train_folds)
+
+        try:
+            train(rotation=rotation, n_train_folds=n_train_folds)
+        
+        # If any exception occurs, write to error folder to differentiate between all the job outputs
+        except Exception as e:
+            fbase = "error/"
+            if not os.path.exists(fbase):
+                os.mkdir(fbase)
+
+            with open("{}r{:02d}_t{:02d}_err.txt".format(fbase, rotation, n_train_folds), "a") as f:
+                err_str = "Error: {}".format(e)
+                f.write(err_str)
+
     else:
         main()
 
