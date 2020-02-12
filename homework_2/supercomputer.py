@@ -55,6 +55,8 @@ def parse_args():
     return rotation, n_train_folds
 
 def train(rotation=0, n_train_folds=18):
+
+    print("PARAMETERS: Rotation {:02d}, # Training Folds {:02d}".format(rotation, n_train_folds))
     
     # Rotate indices based on current rotation
     rotation_indices = get_rotation_indices(n_folds=20, rotation=rotation)
