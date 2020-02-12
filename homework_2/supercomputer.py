@@ -27,6 +27,8 @@ def main():
 
 def start_training_job(rotation, n_train_folds):
 
+    print("Starting job: Rotation {:02d}, # Training Folds {:02d}".format(rotation, n_train_folds))
+
     if "-s" in sys.argv:
         script_to_run = ["sbatch", "supercomputer_job.sh", "-s"]
     else:
