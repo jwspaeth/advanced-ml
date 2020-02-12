@@ -16,18 +16,14 @@ from symbiotic_metrics import FractionOfVarianceAccountedFor
 
 def main():
 
-    #rotation_iterator = range(20)
-    #n_train_folds_list = [1, 2, 3, 5, 10, 18]
-
-    rotation_list = list(range(1))
-    n_train_folds_list = [1, 18]
+    rotation_iterator = list(range(20))
+    n_train_folds_list = [1, 2, 3, 5, 10, 18]
 
     create_index_log(rotation_list, n_train_folds_list)
 
     for rotation in rotation_list:
         for n_train_folds in n_train_folds_list:
             start_training_job(rotation, n_train_folds)
-            #train(rotation=rotation, n_train_folds=n_train_folds)
 
 def start_training_job(rotation, n_train_folds):
 
