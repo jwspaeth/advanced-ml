@@ -28,13 +28,13 @@ def main():
 def start_training_job(rotation, n_train_folds):
 
     if "-s" in sys.argv:
-        script_to_run = ["sbatch", "supercomputer_job.sh"]
+        script_to_run = ["sbatch", "supercomputer_job.sh", "-s"]
     else:
         script_to_run = ["./standard_job.sh"]
 
     process = subprocess.Popen(
         [*script_to_run, 
-        "-job", 
+        "-job", # Indicate to the subprocess that it is a subprocess
         "-rotation={}".format(rotation),
         "-n_train_folds={}".format(n_train_folds)
         ])
