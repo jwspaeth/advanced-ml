@@ -9,7 +9,7 @@
 #SBATCH --job-name=subprocess-%j
 #SBATCH --mail-user=john.w.spaeth-1@ou.edu
 #SBATCH --mail-type=ALL
-#SBATCH --chdir=/home/jwspaeth/workspaces/baby_pattern_discovery/version-3/
+#SBATCH --chdir=/home/jwspaeth/workspaces/advanced-ml/homework_2/
 #SBATCH --wait
 
 python3 supercomputer.py $@
