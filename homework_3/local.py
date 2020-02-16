@@ -20,30 +20,46 @@ def main():
         process = subprocess.Popen([*script_to_run])
         process.wait()
 
-    # Read index file
-    index = load_index_log()
-    rotation_list = index["rotation_list"]
-    n_train_folds_list = index["n_train_folds_list"]
+    # Load dropout experiments and results
+    dropout_options, dropout_experiments = load_index_log(batch_num=0)
+    dropout_results = [load_result_from_experiment(experiment) for experiment in dropout_experiments]
 
-    # Load all results
-    results = []
-    for rotation in rotation_list:
-        for n_train_folds in n_train_folds_list:
-            with open("results/r{:02d}_t{:02d}/results.pkl".format(rotation, n_train_folds), "rb") as fp:
-                results.append(pickle.load(fp))
+    # Load l2 experiments and results
+    l2_options, l2_experiments = load_index_log(batch_num=1)
+    l2_results = [load_result_from_experiment(experiment) for experiment in l2_experiments]
 
-    # Compute average fvafs
-    avg_fvafs = compute_avg_fvafs(results, n_train_folds_list)
+    # Compute fvaf curves for each key value
+    '''dropout_avg_fvafs = compute_avg_fvaf_curves(dropout_results, dropout_options["dropout"], dropout_options["n_train_folds"])
+    l2_avg_fvafs = compute_avg_fvaf_curves(l2_results, l2_options["dropout"], dropout_options["n_train_folds"])
 
-    # Plot and save all the fvafs
-    plot_fvaf(avg_fvafs, n_train_folds_list, "train")
-    plot_fvaf(avg_fvafs, n_train_folds_list, "val")
-    plot_fvaf(avg_fvafs, n_train_folds_list, "test")
+    # Plot fvaf curves for each key value
+    plot_fvaf_curves(dropout_avg_fvafs["val"], dropout_options["dropout"], dropout_option["n_train_folds"])
+    plot_fvaf_curves(l2_avg_fvafs["val"], l2_options["l2"], l2_options["n_train_folds"])
 
-def load_index_log():
+    # Get argmax for the best hyperparameter values
+    dropout_argmax_fvafs = np.amax(dropout_avg_fvafs["val"], axis=0)
+    l2_argmax_fvafs = np.amax(l2_avg_fvafs["val"], axis=0)
 
-    with open("results/index.json") as f:
-        return json.load(f)
+    # Plot the test set fvaf for the argmaxes
+    plot_fvaf(dropout_avg_fvafs["test"][dropout_argmax_fvafs])
+    plot_fvaf(l2_avg_fvafs["test"][l2_argmax_fvafs])'''
+
+def load_result_from_experiment(experiment):
+    file_str = "results/batch_{}/experiment_{}/results_dict.pkl".format(experiment["batch_num"], experiment["experiment_num"])
+    with open(file_str) as fp:
+        return pickle.load(fp)
+
+def load_index_log(batch_num):
+
+    experiments = []
+    with open("results/batch_{}/index.txt".format(batch_num), "r") as f:
+        contents = f.read().split("\n")
+
+        options = json.loads(contents[1])
+        for experiment_str in contents[2:]:
+            experiments.append(json.loads(experiment_str))
+
+        return options, experiments
 
 def plot_fvaf(avg_fvafs, n_train_folds_list, set_name):
     """Plot fvaf based on the set name"""
@@ -75,8 +91,18 @@ def plot_fvaf(avg_fvafs, n_train_folds_list, set_name):
     # Save
     fig.savefig("{}{}_fvaf_plot.png".format(save_path, set_name), dpi=fig.dpi)
 
-def compute_avg_fvafs(results, n_train_folds_list):
+def compute_avg_fvaf_curves(results, key, key_list, n_train_folds):
+
+    curve_list = []
+    for key_val in key_list:
+        key_results = [results if results[key]]
+        curve_list.append( compute_avg_fvafs(results) )
+
+
+def compute_avg_fvafs(results, n_train_folds):
     
+    n_train_folds_list = options["n_train_folds"]
+
     # Sum all the fvafs and count how many values there are
     # Each index represents a n_train_folds hyperparameter
     avg_fvafs = {
