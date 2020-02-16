@@ -39,7 +39,7 @@ def main():
         "rotation": list(range(20)),
         "n_train_folds": [1, 2, 3, 5, 10, 18],
         #"dropout": [0, .3, .6, .9]
-        #"l2": [0, .001, .01, .1]
+        "l2": [0, .001, .01, .1]
     }
 
     option_combinations = create_combinations(options)
