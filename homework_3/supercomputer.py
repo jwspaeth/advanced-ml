@@ -38,8 +38,8 @@ def main():
     options = {
         "rotation": list(range(20)),
         "n_train_folds": [1, 2, 3, 5, 10, 18],
-        #"dropout": [0, .3, .6, .9]
-        "l2": [0, .001, .01, .1]
+        "dropout": [0, .3, .6, .8]
+        #"l2": [0, .001, .01, .1]
     }
 
     option_combinations = create_combinations(options)
@@ -181,7 +181,7 @@ def train(**kwargs):
     # Build model
     model = dnn(
         input_size=(processed_data["train"]["ins"].shape[1],),
-        hidden_sizes=[100, 50],
+        hidden_sizes=[300, 150, 100, 50, 10],
         output_size=processed_data["train"]["outs"].shape[1],
         hidden_act="elu",
         output_act="linear",
@@ -196,7 +196,7 @@ def train(**kwargs):
     # Callbacks
     es_callback = EarlyStopping(
                             monitor="val_loss",
-                            patience=5,
+                            patience=20,
                             restore_best_weights=True,
                             min_delta=.0001)
 
@@ -205,7 +205,7 @@ def train(**kwargs):
             x=processed_data["train"]["ins"],
             y=processed_data["train"]["outs"],
             validation_data = (processed_data["val"]["ins"], processed_data["val"]["outs"]),
-            epochs=100,
+            epochs=10000,
             batch_size=32,
             callbacks=[es_callback]
             )
