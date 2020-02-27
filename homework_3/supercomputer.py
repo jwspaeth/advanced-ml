@@ -15,22 +15,10 @@ from tensorflow.keras.callbacks import EarlyStopping
 from models import dnn
 from symbiotic_metrics import FractionOfVarianceAccountedFor
 
-'''
-To Do
-    Modify network to predict should orientation (theta[0])
-    Add dropout layer options to network (0 value omits dropout)
-    Add l2 regularization options to network (0 value omits regularization)
-    Modify hyperparameter loop to work with a third value (dropout or l2)
-    Modify training function to initiate hyperparameters it finds with args
-    Modify result aggregation function to aggregate l2 or dropout hyperparameters
-    Modify result aggregation to compute average fvaf across a larger matrix
-        Average across rotations, resulting in a hyperparameter x training set size matrix
-        Take max across hyperparameters, resuling in training set size matrix
-
-'''
-
 def main():
+    """Spits out training jobs for each configuration"""
 
+    # Create error file
     with open("error/err.txt", "w") as f:
         pass
 

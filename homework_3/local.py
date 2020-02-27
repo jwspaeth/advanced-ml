@@ -7,6 +7,7 @@ import os
 import subprocess
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 def main():
 
@@ -15,7 +16,7 @@ def main():
         script_to_run = [
             "scp",
             "-r", 
-            "jwspaeth@schooner.oscer.ou.edu:/home/jwspaeth/workspaces/advanced-ml/homework_2/results",
+            "jwspaeth@schooner.oscer.ou.edu:/home/jwspaeth/workspaces/advanced-ml/homework_3/results",
             "./"]
         process = subprocess.Popen([*script_to_run])
         process.wait()
@@ -29,40 +30,70 @@ def main():
     l2_results = [load_result_from_experiment(experiment) for experiment in l2_experiments]
 
     # Compute fvaf curves for each key value
-    '''dropout_avg_fvafs = compute_avg_fvaf_curves(dropout_results, dropout_options["dropout"], dropout_options["n_train_folds"])
-    l2_avg_fvafs = compute_avg_fvaf_curves(l2_results, l2_options["dropout"], dropout_options["n_train_folds"])
+    #   (training folds x hyperparameter value), so average across rotations
+    dropout_avg_fvafs = compute_avg_fvaf_curves(dropout_results,
+                                                dropout_options["n_train_folds"],
+                                                dropout_options["dropout"],
+                                                "dropout",
+                                                dropout_options["rotation"])
+    l2_avg_fvafs = compute_avg_fvaf_curves(l2_results,
+                                            l2_options["n_train_folds"],
+                                            l2_options["l2"],
+                                            "l2",
+                                            l2_options["rotation"])
 
     # Plot fvaf curves for each key value
-    plot_fvaf_curves(dropout_avg_fvafs["val"], dropout_options["dropout"], dropout_option["n_train_folds"])
-    plot_fvaf_curves(l2_avg_fvafs["val"], l2_options["l2"], l2_options["n_train_folds"])
+    plot_fvaf_curves(dropout_options["n_train_folds"],
+                    dropout_options["dropout"],
+                    dropout_avg_fvafs["val"],
+                    "Validation Dropout")
+    plot_fvaf_curves(l2_options["n_train_folds"],
+                    l2_options["l2"],
+                    l2_avg_fvafs["val"],
+                    "Validation L2")
 
     # Get argmax for the best hyperparameter values
-    dropout_argmax_fvafs = np.amax(dropout_avg_fvafs["val"], axis=0)
-    l2_argmax_fvafs = np.amax(l2_avg_fvafs["val"], axis=0)
+    dropout_argmax_fvafs = np.argmax(dropout_avg_fvafs["val"], axis=1)
+    l2_argmax_fvafs = np.argmax(l2_avg_fvafs["val"], axis=1)
+
+    # Build arrays containing test values for best validation models
+    test_dropout = []
+    test_l2 = []
+    for i in range(dropout_argmax_fvafs.shape[0]):
+        test_dropout.append(dropout_avg_fvafs["test"][i, dropout_argmax_fvafs[i]])
+        test_l2.append(l2_avg_fvafs["test"][i, l2_argmax_fvafs[i]])
+    test_dropout = np.expand_dims(np.concatenate(test_dropout), axis=1)
+    test_l2 = np.expand_dims(np.concatenate(test_l2), axis=1)
+    test = np.concatenate((test_dropout, test_l2), axis=1)
 
     # Plot the test set fvaf for the argmaxes
-    plot_fvaf(dropout_avg_fvafs["test"][dropout_argmax_fvafs])
-    plot_fvaf(l2_avg_fvafs["test"][l2_argmax_fvafs])'''
+    plot_fvaf_curves(dropout_options["n_train_folds"],
+                    ["Dropout", "L2"],
+                    test,
+                    "Test Curves")
 
 def load_result_from_experiment(experiment):
+    """Load result of given experiment"""
+
     file_str = "results/batch_{}/experiment_{}/results_dict.pkl".format(experiment["batch_num"], experiment["experiment_num"])
-    with open(file_str) as fp:
+    with open(file_str, "rb") as fp:
         return pickle.load(fp)
 
 def load_index_log(batch_num):
+    """Load the index log of the batch"""
 
     experiments = []
     with open("results/batch_{}/index.txt".format(batch_num), "r") as f:
         contents = f.read().split("\n")
 
         options = json.loads(contents[1])
-        for experiment_str in contents[2:]:
+        for i, experiment_str in enumerate(contents[2:len(contents)-1]):
             experiments.append(json.loads(experiment_str))
 
         return options, experiments
 
-def plot_fvaf(avg_fvafs, n_train_folds_list, set_name):
-    """Plot fvaf based on the set name"""
+def plot_fvaf_curves(n_train_folds_list, key_list, curves, plot_name):
+    """Plot fvaf based on the given curves"""
 
     # Create results directory
     save_path = "results/"
@@ -77,59 +108,49 @@ def plot_fvaf(avg_fvafs, n_train_folds_list, set_name):
     # Create and configure plot
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(n_train_folds_list, avg_fvafs[set_name])
+    for i in range(curves.shape[1]):
+        ax.plot(n_train_folds_list, curves[:, i], label=str(key_list[i]))
+    plt.legend()
     plt.ylabel("Average FVAF")
     plt.xlabel("Number of Training Folds")
 
-    if set_name == "train":
-        plt.title("Training Set")
-    elif set_name == "val":
-        plt.title("Validation Set")
-    elif set_name == "test":
-        plt.title("Test Set")
+    plt.title(plot_name)
 
     # Save
-    fig.savefig("{}{}_fvaf_plot.png".format(save_path, set_name), dpi=fig.dpi)
+    fig.savefig("{}{}_fvaf_plot.png".format(save_path, plot_name), dpi=fig.dpi)
 
-def compute_avg_fvaf_curves(results, key, key_list, n_train_folds):
+def get_matching_result(results, n_train_fold, key_val, key_name, rotation_val):
+    """Find the result that matches the given values"""
 
-    curve_list = []
-    for key_val in key_list:
-        key_results = [results if results[key]]
-        curve_list.append( compute_avg_fvafs(results) )
+    for i, result in enumerate(results):
 
+        if (int(result["n_train_folds"]) == n_train_fold) and (float(result[key_name]) == key_val) and (int(result["rotation"]) == rotation_val):
+            return result
 
-def compute_avg_fvafs(results, n_train_folds):
-    
-    n_train_folds_list = options["n_train_folds"]
+def compute_avg_fvaf_curves(results, n_train_fold_list, key_list, key_name, rotation_list):
+    """Gets the average fvaf across rotations for both the validation and test sets"""
 
-    # Sum all the fvafs and count how many values there are
-    # Each index represents a n_train_folds hyperparameter
-    avg_fvafs = {
-        "train": [0]*len(n_train_folds_list),
-        "val": [0]*len(n_train_folds_list),
-        "test": [0]*len(n_train_folds_list)
+    # Create 3d array of results
+    fvaf_curves = {
+        "val": np.zeros(shape=(len(n_train_fold_list), len(key_list), len(rotation_list)), dtype=object),
+        "test": np.zeros(shape=(len(n_train_fold_list), len(key_list), len(rotation_list)), dtype=object)
     }
+    for i, n_train_fold in enumerate(n_train_fold_list):
+        for j, key_val in enumerate(key_list):
+            for k, rotation_val in enumerate(rotation_list):
 
-    # Loop through each split
-    for key in avg_fvafs.keys():
+                # Get result with the matching parameters
+                result = get_matching_result(results, n_train_fold, key_val, key_name, rotation_val)
 
-        # Start summing and count the fvaf values
-        sum_fvafs = [0]*len(n_train_folds_list)
-        count_fvafs = [0]*len(n_train_folds_list)
-        for i in range(len(n_train_folds_list)):
+                # Store the validation or test fvaf
+                fvaf_curves["val"][i, j, k] = result["eval_val"][1]
+                fvaf_curves["test"][i, j, k] = result["eval_test"][1]
 
-            for result in results:
-                if result["n_train_folds"] == n_train_folds_list[i]:
-                    sum_fvafs[i] += result["eval_{}".format(key)][1]
-                    count_fvafs[i] += 1
+    # Average across rotations
+    fvaf_curves["val"] = np.average(fvaf_curves["val"], axis=2)
+    fvaf_curves["test"] = np.average(fvaf_curves["test"], axis=2)
 
-        # Create average fvafs based on the sum and counts
-        for i in range(len(n_train_folds_list)):
-            if count_fvafs[i] != 0:
-                avg_fvafs[key][i] = sum_fvafs[i] / count_fvafs[i]
-
-    return avg_fvafs
+    return fvaf_curves
 
 if __name__ == "__main__":
     main()
