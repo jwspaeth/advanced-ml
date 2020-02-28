@@ -2,9 +2,19 @@
 import json
 import copy
 
-from tensorflow.keras.callbacks import Callback
+import tensorflow.keras.callbacks as keras_callbacks
 
-class FileMetricLogger(Callback):
+class EarlyStopping(keras_callbacks.EarlyStopping):
+
+    def __init__(self, exp_cfg, fbase=None):
+        super().__init__(
+                monitor="val_loss",
+                patience=exp_cfg.callbacks.EarlyStopping.patience,
+                restore_best_weights=True,
+                min_delta=exp_cfg.callbacks.EarlyStopping.min_delta
+            )
+
+class FileMetricLogger(keras_callbacks.Callback):
     """Callback that accumulates epoch averages of metrics.
     This callback is automatically applied to every Keras model.
     # Arguments
@@ -14,9 +24,11 @@ class FileMetricLogger(Callback):
             All others will be averaged in `on_epoch_end`.
     """
 
-    def __init__(self, fbase):
-        super(FileMetricLogger, self).__init__()
+    def __init__(self, fbase, exp_cfg=None):
+        super().__init__()
         self.file_path = fbase + "metric_logs.txt"
+        with open(self.file_path, "w") as f:
+            pass
         self.best_val_loss = None
         self.best_val_epoch = None
         self.best_val_dict = {}

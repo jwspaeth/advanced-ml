@@ -133,39 +133,48 @@ def train():
     print()
 
     # Load data
-    dataset = Core50Dataset()
+    dataset = cfg_handler.get_dataset(exp_cfg)
     data_dict = dataset.load_data()
 
-    print("Train ins shape: {}".format(data_dict["train"]["ins"].shape))
-    print("Train outs shape: {}".format(data_dict["train"]["outs"].shape))
-    print("Val ins shape: {}".format(data_dict["val"]["ins"].shape))
-    print("Val outs shape: {}".format(data_dict["val"]["outs"].shape))
-    print()
-
     # Build model
-    model = cnn(dataset.get_input_size(), exp_cfg)
+    model = cfg_handler.get_model(dataset.get_input_size(), exp_cfg)
 
     # Compile model
-    model.compile(optimizer="adam", loss="mse", metrics=exp_cfg.train.metrics, verbose=2)
+    model.compile(
+        optimizer=exp_cfg.train.optimizer,
+        loss=exp_cfg.train.loss,
+        metrics=exp_cfg.train.metrics,
+        verbose=exp_cfg.train.verbose)
     model.summary()
 
     # Callbacks
-    es_callback = EarlyStopping(
-                            monitor="val_loss",
-                            patience=exp_cfg.train.patience,
-                            restore_best_weights=True,
-                            min_delta=exp_cfg.train.min_delta)
-    fm_callback = FileMetricLogger(fbase=fbase)
+    callbacks = cfg_handler.get_callbacks(fbase, exp_cfg)
 
-    # Train model
-    history = model.fit(
-            x=data_dict["train"]["ins"],
-            y=data_dict["train"]["outs"],
-            validation_data = (data_dict["val"]["ins"], data_dict["val"]["outs"]),
-            epochs=exp_cfg.train.epochs,
-            batch_size=32,
-            callbacks=[es_callback, fm_callback]
-            )
+    # Future work
+    # Check if train key is a dict. If so, do non-generator training. Else, do generator training.
+    # Check if val key exists. If not, don't use.
+    #   Otherwise, check if val is a dict or generator and proceed accordingly
+    # In total, 6 options.
+
+    # Train model. Requirements for model.fit are liable to expand in the future, and would
+    #   require further development. e.g. using sample or class weights, validation steps, or validation frequency
+    if "val" in data_dict.keys():
+        history = model.fit(
+                x=data_dict["train"]["ins"],
+                y=data_dict["train"]["outs"],
+                validation_data = (data_dict["val"]["ins"], data_dict["val"]["outs"]),
+                epochs=exp_cfg.train.epochs,
+                batch_size=exp_cfg.train.batch_size,
+                callbacks=callbacks
+                )
+    else:
+        history = model.fit(
+                x=data_dict["train"]["ins"],
+                y=data_dict["train"]["outs"],
+                epochs=exp_cfg.train.epochs,
+                batch_size=exp_cfg.train.batch_size,
+                callbacks=callbacks
+                )
 
     # Log results
     log_results(data_dict, model, exp_cfg, fbase)
