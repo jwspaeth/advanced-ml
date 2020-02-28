@@ -157,8 +157,6 @@ def train():
                             min_delta=exp_cfg.train.min_delta)
     fm_callback = FileMetricLogger(fbase=fbase)
 
-    print("Data ins type before training: {}".format(data_dict["train"]["ins"].dtype))
-
     # Train model
     history = model.fit(
             x=data_dict["train"]["ins"],
@@ -181,7 +179,6 @@ def log_results(data, model, exp_cfg, fbase):
     results = {}
     results_brief = {}
     results["history"] = model.history.history
-    print("Data ins type after training: {}".format(data["train"]["ins"].dtype))
     if "train" in data.keys():
         results['predict_train'] = model.predict(data["train"]["ins"])
         results['eval_train'] = model.evaluate(data["train"]["ins"], data["train"]["outs"])

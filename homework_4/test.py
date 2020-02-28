@@ -11,7 +11,7 @@ if __name__ == "__main__":
     dataset = Core50Dataset()
     data_dict = dataset.load_data()
 
-    scissor_inds = []
+    '''scissor_inds = []
     mug_inds = []
     for i in range(data_dict["train"]["outs"].shape[0]):
 
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         plt.imshow(data_dict["val"]["ins"][ind].astype(int))
         print("Val outs {}: {}".format(ind, data_dict["val"]["outs"][ind]))
         plt.show()
-    print()
+    print()'''

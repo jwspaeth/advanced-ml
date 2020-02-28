@@ -29,15 +29,11 @@ class Core50Dataset:
             "val": {"ins": [], "outs": []}
         }
 
-        print("Scissors: {}".format(self.o_scissors))
-        print("Mugs: {}".format(self.o_mugs))
-        print("Combined scissors and mugs: {}".format(self.o_scissors+self.o_mugs))
-        print("Scissors: {}".format(self.o_scissors))
-        print("Mugs: {}".format(self.o_mugs))
-
+        image_count = 0
         for s in self.s_inds:
             for o in self.o_scissors+self.o_mugs:
                 images = self.load_images(s, o)
+                image_count += len(images)
 
                 # Scissors are positive, mugs are negative
                 if o in self.o_scissors:
@@ -52,6 +48,8 @@ class Core50Dataset:
                 else:
                     data_dict["val"]["ins"] = data_dict["val"]["ins"] + images
                     data_dict["val"]["outs"] = data_dict["val"]["outs"] + label_list
+
+        print("Final image count: {}".format(image_count))
 
         # Convert data dictionary entries into numpy arrays instead of lists
         data_dict["train"]["ins"] = np.stack(data_dict["train"]["ins"], axis=0)

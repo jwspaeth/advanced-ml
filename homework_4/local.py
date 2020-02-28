@@ -14,14 +14,14 @@ from datasets import Core50Dataset
 
 def main():
 
-    batch_name = "log_test"
+    batch_name = "shallow_test_1"
     fbase = "results/{}/".format(batch_name)
 
     # Load experiment batch
     results = load_batch_results(fbase)
 
     # Create list of validation accuracy curves
-    acc_curves = [result["history"]["val_acc"] for result in results]
+    acc_curves = [result["history"]["val_acc"] for i, result in enumerate(results)]
 
     # Plot learning curves
     plot_learning_curves(fbase, acc_curves, "Validation")
@@ -74,8 +74,11 @@ def plot_learning_curves(fbase, curves, set_name):
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     for curve in curves:
-        ax.plot(curve)
-    plt.title("{} Learning Curve".format(set_name))
+        vmax = np.amax(curve)
+        emax = np.argmax(curve)
+        ax.plot(curve, label="Best: Accuracy {:.2f}, Epoch {}".format(vmax, emax))
+    plt.title("{} Learning Curves".format(set_name))
+    plt.legend()
     plt.ylabel("Accuracy")
     plt.xlabel("Epochs")
 
@@ -90,7 +93,7 @@ def plot_roc_curves(fbase, curves, set_name):
     ax = fig.add_subplot(1, 1, 1)
     for curve in curves:
         ax.plot(curve["fpr"], curve["tpr"], 'r', label='AUC = {:.3f}'.format(curve["auc"]))
-    plt.title("{} ROC".format(set_name))
+    plt.title("{} ROC Curves".format(set_name))
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate') 
 
