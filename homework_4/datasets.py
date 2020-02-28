@@ -19,7 +19,7 @@ class Core50Dataset:
     o_train = [2, 3, 4, 5]
     o_val = [1]
 
-    def __init__(self):
+    def __init__(self, exp_cfg=None):
         pass
 
     def load_data(self):

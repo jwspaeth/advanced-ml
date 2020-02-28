@@ -3,12 +3,22 @@ from yacs.config import CfgNode as CN
 # Construct default configuration
 _D = CN()
 
+from yacs.config import CfgNode as CN
+
+# Construct root
+_D = CN()
+
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "deep_test_1"
+_D.save.experiment_batch_name = "deep_dummy_test"
+
+# Dataset parameters
+_D.dataset = CN()
+_D.dataset.name = "Core50Dataset"
 
 # Model parameters
 _D.model = CN()
+_D.model.name = "cnn"
 _D.model.input_axis_norm = 3
 _D.model.conv = CN()
 _D.model.conv.filters = [10, 20, 30, 40]
@@ -27,20 +37,26 @@ _D.model.output.activation = "softmax"
 
 # Training parameters
 _D.train = CN()
+_D.train.optimizer = "adam"
 _D.train.epochs = 200
 _D.train.batch_size = 32
 _D.train.loss = "mse"
 _D.train.metrics = ["acc"]
 _D.train.verbose = 2
-_D.train.patience = 25
-_D.train.min_delta = .0001
+
+# Callback parameters
+_D.callbacks = CN()
+_D.callbacks.names = ["EarlyStopping", "FileMetricLogger"]
+_D.callbacks.EarlyStopping = CN()
+_D.callbacks.EarlyStopping.patience = 25
+_D.callbacks.EarlyStopping.min_delta = .0001
 
 # Evaluation parameters
 _D.evaluate = CN()
 
 # Misc parameters
 _D.misc = CN()
-_D.misc.default_duplicate = 5 # Duplicates experiments by this amount. Only activates if all options are empty
+_D.misc.default_duplicate = 1 # Duplicates experiments by this amount. Only activates if all options are empty
 
 # Construct list of configuration keys and their possible options
 # • If the key is in the list, the default is overwritten, unless its corresponding value list is empty
@@ -53,6 +69,7 @@ all_options_dict = {
 	"model.dense.hidden_sizes": [],
 	"model.dense.dropout": []
 }
+
 
 
 

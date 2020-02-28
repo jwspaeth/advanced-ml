@@ -12,4 +12,4 @@
 #SBATCH --chdir=/home/jwspaeth/workspaces/advanced-ml/homework_4/
 #SBATCH --wait
 
-python3 supercomputer.py $@
+python3 main.py $@

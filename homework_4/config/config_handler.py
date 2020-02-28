@@ -68,18 +68,18 @@ class config_handler:
 
 	def get_dataset(self, exp_cfg):
 		dataset_class = self._import_dataset(exp_cfg.dataset.name)
-		dataset = dataset_class(exp_cfg.dataset)
+		dataset = dataset_class(exp_cfg=exp_cfg)
 		return dataset
 
 	def get_model(self, input_size, exp_cfg):
 		model_class = self._import_model(exp_cfg.model.name)
-		model = model_class(input_size, exp_cfg)
+		model = model_class(input_size=input_size, exp_cfg=exp_cfg)
 		return model
 
 	def get_callbacks(self, fbase, exp_cfg):
 		callbacks = []
 		for callback_name in exp_cfg.callbacks.names:
-			callbacks.append( self._import_callback(callback_name)(fbase, exp_cfg) )
+			callbacks.append( self._import_callback(callback_name)(fbase=fbase, exp_cfg=exp_cfg) )
 
 		return callbacks
 
@@ -123,11 +123,11 @@ class config_handler:
 	def _import_dataset(self, dataset_name):
 		# Find and import dataset from folder. If not found throw error.
 		try:
-			dataset_class = getattr(datasetss, dataset_name)
+			dataset_class = getattr(datasets, dataset_name)
 		except AttributeError:
 			raise exceptions.DatasetNotFoundException(dataset_name)
 
-		return model_class
+		return dataset_class
 
 	def _import_model(self, model_name):
 		# Find and import model from module. If not found throw error.
