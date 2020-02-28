@@ -3,9 +3,14 @@ from yacs.config import CfgNode as CN
 # Construct default configuration
 _D = CN()
 
+from yacs.config import CfgNode as CN
+
+# Construct root
+_D = CN()
+
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "generalize_test_1"
+_D.save.experiment_batch_name = "deep_dummy_test"
 
 # Dataset parameters
 _D.dataset = CN()
@@ -64,6 +69,7 @@ all_options_dict = {
 	"model.dense.hidden_sizes": [],
 	"model.dense.dropout": []
 }
+
 
 
 
