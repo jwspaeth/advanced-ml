@@ -9,13 +9,9 @@ import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tensorflow.keras.callbacks import EarlyStopping
 
-from models import cnn
-from datasets import Core50Dataset
 from config.config_handler import config_handler
 from exceptions import MissingConfigArgException
-from callbacks import FileMetricLogger
 
 def main():
     """Spits out training jobs for each configuration"""
@@ -26,13 +22,14 @@ def main():
     # Create configuration handler
     cfg_handler = config_handler(cfg_name)
 
-    # Create index file
-    create_index_log(cfg_handler)
+    if cfg_handler.get_mode() == "train":
+        # Create index file
+        create_index_log(cfg_handler)
 
     # Start a job for each hyperparameter
     print("Number of jobs to start: {}".format(cfg_handler.get_num_experiments()))
     for i in range(cfg_handler.get_num_experiments()):
-        start_training_job(cfg_name, i)
+        start_job(cfg_name, i, cfg_handler.get_mode())
 
 def get_cfg_name():
 
@@ -71,7 +68,7 @@ def create_index_log(cfg_handler):
             json.dump(individual_option, f)
             f.write("\n")
 
-def start_training_job(config_name, experiment_num):
+def start_job(config_name, experiment_num, mode):
     """
     Starts a job for the fed arguments. This takes the form of a subprocess,
     whether on a normal computer or supercomputer
@@ -93,12 +90,51 @@ def start_training_job(config_name, experiment_num):
         "-exp_num={}".format(experiment_num)
     ]
 
+    if mode == "train":
+        full_command.append("-train")
+    elif mode == "eval":
+        full_command.append("-eval")
+    else:
+        raise Exception("Error: configuration mode must be either train or eval")
+
+
     # Run chosen script with correct arguments
     process = subprocess.Popen(full_command)
 
     # Wait if not parallel
     if "-p" not in sys.argv:
         process.wait()
+
+def evaluate(model=None):
+    """
+    Evaluation only works on existing models and cached results. The model can be fed as an argument,
+    or reloaded through the configuration file. If reloaded, it will save results into
+    the original experiment's directory. Can evaluate one experiment at a time.
+    """
+
+    # Get configuration values
+    cfg_name = get_cfg_name()
+    experiment_num = get_exp_num()
+    cfg_handler = config_handler(cfg_name)
+    exp_cfg = cfg_handler.get_experiment(experiment_num)
+
+    # Load dataset
+    dataset = cfg_handler.get_dataset(exp_cfg)
+
+    # Load model
+    if model is None:
+        if exp_cfg.model.reload_path == "":
+            raise Exception("Error: evaluation only works on existing model. Must model as an argument" +
+                " or specify reload path to experiment")
+        else:
+            model = cfg_handler.get_model(exp_cfg=exp_cfg)
+
+    # Load evaluation functions
+    evaluation_functions = cfg_handler.get_evaluation_functions(exp_cfg)
+
+    # Use evaluation functions
+    for evaluation_function in evaluation_functions:
+        evaluation_function(dataset, model, exp_cfg)
 
 def train():
 
@@ -136,15 +172,19 @@ def train():
     dataset = cfg_handler.get_dataset(exp_cfg)
     data_dict = dataset.load_data()
 
+    print("Train ins shape: {}".format(data_dict["train"]["ins"].shape))
+    print("Train outs shape: {}".format(data_dict["train"]["outs"].shape))
+
     # Build model
-    model = cfg_handler.get_model(dataset.get_input_size(), exp_cfg)
+    model = cfg_handler.get_model(
+        input_size=dataset.get_input_size(),
+        exp_cfg=exp_cfg)
 
     # Compile model
     model.compile(
         optimizer=exp_cfg.train.optimizer,
         loss=exp_cfg.train.loss,
-        metrics=exp_cfg.train.metrics,
-        verbose=exp_cfg.train.verbose)
+        metrics=exp_cfg.train.metrics)
     model.summary()
 
     # Callbacks
@@ -165,7 +205,8 @@ def train():
                 validation_data = (data_dict["val"]["ins"], data_dict["val"]["outs"]),
                 epochs=exp_cfg.train.epochs,
                 batch_size=exp_cfg.train.batch_size,
-                callbacks=callbacks
+                callbacks=callbacks,
+                verbose=exp_cfg.train.verbose
                 )
     else:
         history = model.fit(
@@ -173,7 +214,8 @@ def train():
                 y=data_dict["train"]["outs"],
                 epochs=exp_cfg.train.epochs,
                 batch_size=exp_cfg.train.batch_size,
-                callbacks=callbacks
+                callbacks=callbacks,
+                verbose=exp_cfg.train.verbose
                 )
 
     # Log results
@@ -208,7 +250,7 @@ def log_results(data, model, exp_cfg, fbase):
         os.mkdir("{}/model_and_cfg/".format(fbase))
 
     # Save model
-    model.save("{}/model_and_cfg/".format(fbase))
+    model.save("{}/model_and_cfg/".format(fbase), save_format="tf")
 
     # Save brief results for human readability
     with open("{}results_brief.txt".format(fbase), "w") as f:
@@ -258,7 +300,10 @@ if __name__ == "__main__":
 
     # If this is a subprocess, run the training program
     if "-job" in sys.argv:
-        train()
+        if "-train" in sys.argv:
+            train()
+        elif "-eval" in sys.argv:
+            evaluate()
     else:
         main()
 

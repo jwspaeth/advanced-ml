@@ -1,12 +1,11 @@
-from yacs.config import CfgNode as CN
-
-# Construct default configuration
-_D = CN()
 
 from yacs.config import CfgNode as CN
 
 # Construct root
 _D = CN()
+
+# Training or evaluation
+_D.mode = "train"
 
 # Save parameters
 _D.save = CN()
@@ -34,6 +33,7 @@ _D.model.dense.batch_norms = [1, 1]
 _D.model.output = CN()
 _D.model.output.output_size = 2
 _D.model.output.activation = "softmax"
+_D.model.reload_path = ""
 
 # Training parameters
 _D.train = CN()

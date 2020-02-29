@@ -3,10 +3,13 @@ import os
 import importlib
 from itertools import product
 
+import tensorflow.keras.models as keras_models
+
 import exceptions
 import models
 import datasets
 import callbacks as custom_callbacks
+import evaluation_functions
 
 class config_handler:
 
@@ -21,6 +24,9 @@ class config_handler:
 		# Return a clone so that the defaults will not be altered
 		# This is for the "local variable" use pattern
 		return self._D.clone()
+
+	def get_mode(self):
+		return self._D.mode
 
 	def get_experiments(self):
 		# Get cartesian product of options config applied to default config
@@ -71,10 +77,15 @@ class config_handler:
 		dataset = dataset_class(exp_cfg=exp_cfg)
 		return dataset
 
-	def get_model(self, input_size, exp_cfg):
-		model_class = self._import_model(exp_cfg.model.name)
-		model = model_class(input_size=input_size, exp_cfg=exp_cfg)
-		return model
+	def get_model(self, exp_cfg, input_size=None):
+
+		if exp_cfg.model.reload_path != "": # For reloading model architecture & weights from file
+			model = keras_models.load_model("{}model_and_cfg".format(exp_cfg.model.reload_path))
+			return model
+		else: # For creating model from scratch using configuration file
+			model_class = self._import_model(exp_cfg.model.name)
+			model = model_class(input_size=input_size, exp_cfg=exp_cfg)
+			return model
 
 	def get_callbacks(self, fbase, exp_cfg):
 		callbacks = []
@@ -82,6 +93,9 @@ class config_handler:
 			callbacks.append( self._import_callback(callback_name)(fbase=fbase, exp_cfg=exp_cfg) )
 
 		return callbacks
+
+	def get_evaluation_functions(self, exp_cfg):
+		return []
 
 	def _get_individual_options_list(self):
 		cleaned_all_options_dict = self._clean_dict(self.all_options_dict)

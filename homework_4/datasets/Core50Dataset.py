@@ -1,17 +1,17 @@
 
-import glob
 import sys
+import glob
 
 import imageio
 import numpy as np
 
 class Core50Dataset:
 
-    # Load data
+    # Data path
     if "-s" in sys.argv:
         data_path = "/home/fagg/ml_datasets/core50/core50_128x128/"
     else:
-        data_path = "core50/core50_128x128/"
+        data_path = "/Users/willspaeth/datasets/core50/core50_128x128/"
 
     s_inds = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11]
     o_scissors = [11, 12, 13, 14, 15]
@@ -76,8 +76,3 @@ class Core50Dataset:
     def _get_matching_filenames(self, s, o):
         file_pattern = "{}s{}/o{}/C_{:02d}_{}_*0.png".format(self.data_path, s, o, s, o)
         return glob.glob(file_pattern)
-
-
-
-
-
