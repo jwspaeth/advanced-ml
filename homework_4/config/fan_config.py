@@ -1,5 +1,10 @@
 
 from yacs.config import CfgNode as CN
+from custom_losses import fan_mse
+
+# Ways around this:
+# 	• Manually reload with exp_cfg and weights
+# 	• Don't save custom objects (may not need after doing above)
 
 # Construct root
 _D = CN()
@@ -25,7 +30,7 @@ _D.model = CN()
 _D.model.name = "fan"
 _D.model.input_axis_norm = 2
 _D.model.conv = CN()
-_D.model.conv.filters = [5]
+_D.model.conv.filters = [3]
 _D.model.conv.kernels = [25] # Half second window
 _D.model.conv.strides = [1]
 _D.model.conv.max_pool_sizes = [1]
@@ -33,6 +38,7 @@ _D.model.conv.batch_norms = [0]
 _D.model.conv.l2 = 0
 _D.model.conv.cross_filter_lambda = 0
 _D.model.conv.activation_lambda = 0
+_D.model.conv.names = ["conv"]
 _D.model.max_pool = CN()
 _D.model.max_pool.pool_size = (10 * 50) # Seconds * (timesteps/second)
 _D.model.max_pool.padding = "same"
@@ -50,7 +56,7 @@ _D.train = CN()
 _D.train.optimizer = "adam"
 _D.train.epochs = 200
 _D.train.batch_size = 32
-_D.train.loss = "mse"
+_D.train.loss = "fan_mse"
 _D.train.metrics = []
 _D.train.verbose = 2
 
@@ -60,7 +66,8 @@ _D.callbacks.names = ["FileMetricLogger"]
 
 # Evaluation parameters
 _D.evaluate = CN()
-_D.evaluate.evaluation_functions = []
+_D.evaluate.reload_path = "results/fan_dummy_test/*/"
+_D.evaluate.evaluation_functions = ["test_func", "create_ranked_filters"]
 
 # Misc parameters
 _D.misc = CN()

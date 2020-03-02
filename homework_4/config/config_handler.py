@@ -2,6 +2,7 @@
 import os
 import importlib
 from itertools import product
+import glob
 
 import tensorflow.keras.models as keras_models
 
@@ -10,6 +11,7 @@ import models
 import datasets
 import callbacks as custom_callbacks
 import evaluation_functions
+import custom_losses
 
 class config_handler:
 
@@ -46,11 +48,20 @@ class config_handler:
 		return exp_list
 
 	def get_experiment(self, experiment_num):
-		# Fetch all experiments
-		exp_cfg_list = self.get_experiments()
 
-		# Index by number
-		return exp_cfg_list[experiment_num]
+		mode = self._D.mode
+
+		# If training mode, return config containing configuration
+		# If eval mode, return relevant filename and default config
+		if mode == "train":
+			# Fetch all experiments
+			exp_cfg_list = self.get_experiments()
+			# Return total number
+			return exp_cfg_list[experiment_num]
+		elif mode == "eval":
+			# Fetch all filenames matching regex
+			filenames = glob.glob(self._D.evaluate.reload_path)
+			return filenames[experiment_num], self._D.clone()
 
 	def get_option(self, experiment_num):
 		# Fetch all individual options
@@ -62,11 +73,20 @@ class config_handler:
 		return individual_option_list[experiment_num]
 
 	def get_num_experiments(self):
-		# Fetch all experiments
-		exp_cfg_list = self.get_experiments()
 
-		# Return total number
-		return len(exp_cfg_list)
+		mode = self._D.mode
+
+		# If training mode, number of experiments is number of combinations in the options dict
+		# If eval mode, number of experiments is the number of models to reload and evaluate
+		if mode == "train":
+			# Fetch all experiments
+			exp_cfg_list = self.get_experiments()
+			# Return total number
+			return len(exp_cfg_list)
+		elif mode == "eval":
+			# Fetch all filenames matching regex
+			filenames = glob.glob(self._D.evaluate.reload_path)
+			return len(filenames)
 
 	def get_options(self):
 		# Fetch options
@@ -77,10 +97,17 @@ class config_handler:
 		dataset = dataset_class(exp_cfg=exp_cfg)
 		return dataset
 
-	def get_model(self, exp_cfg, input_size=None):
+	def get_model(self, exp_cfg=None, input_size=None, filename=None):
 
+		print("Custom objects: {}".format(exp_cfg.model.custom_objects[0]))
+
+		if filename is not None: # For reloading model during evaluation
+			model = keras_models.load_model("{}model_and_cfg/saved_model.h5".format(filename),
+				custom_objects=exp_cfg.model.custom_objects[0])
+			return model
 		if exp_cfg.model.reload_path != "": # For reloading model architecture & weights from file
-			model = keras_models.load_model("{}model_and_cfg".format(exp_cfg.model.reload_path))
+			model = keras_models.load_model("{}model_and_cfg/saved_model.h5".format(exp_cfg.model.reload_path),
+				custom_objects=exp_cfg.model.custom_objects[0])
 			return model
 		else: # For creating model from scratch using configuration file
 			model_class = self._import_model(exp_cfg.model.name)
@@ -95,7 +122,17 @@ class config_handler:
 		return callbacks
 
 	def get_evaluation_functions(self, exp_cfg):
-		return []
+		eval_functions = []
+		for eval_name in exp_cfg.evaluate.evaluation_functions:
+			eval_functions.append( self._import_evaluation_function(eval_name) )
+
+		return eval_functions
+
+	def get_loss(self, loss):
+		if loss in dir(custom_losses):
+			return getattr(custom_losses, loss)
+		else:
+			return loss
 
 	def _get_individual_options_list(self):
 		cleaned_all_options_dict = self._clean_dict(self.all_options_dict)
@@ -161,6 +198,14 @@ class config_handler:
 			raise exceptions.CallbackNotFoundException(callback_name)
 
 		return current_callback_class
+
+	def _import_evaluation_function(self, func_name):
+		try:
+			eval_func = getattr(evaluation_functions, func_name)
+		except AttributeError:
+			raise exceptions.EvaluationFunctionNotFoundException(func_name)
+
+		return eval_func
 
 
 

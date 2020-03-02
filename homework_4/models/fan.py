@@ -1,11 +1,11 @@
 
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, BatchNormalization, MaxPool1D, AveragePooling1D, Lambda
+from tensorflow.keras import backend
 
 from custom_layers import pipe_model, conv_stack_1d
 
 # To Do
-#   • Incomplete: Finalize evaluation setup
 #   • Incomplete: Rebuild visualizations
 #   • Incomplete: Figure out why labels work despite mismatch
 #   • Incomplete: activation regularization
@@ -15,11 +15,6 @@ def fan(input_size, exp_cfg):
     """Constructs the frequency analysis neural network"""
 
     layers = []
-
-    # Normalize input
-    layers.append(
-            BatchNormalization(axis=exp_cfg.model.input_axis_norm)
-        )
 
     # Tack on any remaining regularization to convolution layer
     #   • Incomplete: activation regularization
@@ -33,7 +28,8 @@ def fan(input_size, exp_cfg):
                 batch_norms=exp_cfg.model.conv.batch_norms,
                 l2=exp_cfg.model.conv.l2,
                 cross_filter_lambda=exp_cfg.model.conv.cross_filter_lambda,
-                activation_lambda=exp_cfg.model.conv.activation_lambda
+                activation_lambda=exp_cfg.model.conv.activation_lambda,
+                names=exp_cfg.model.conv.names
             )
         )
 
@@ -51,6 +47,11 @@ def fan(input_size, exp_cfg):
                     pool_size=exp_cfg.model.avg_pool.pool_size,
                     padding=exp_cfg.model.avg_pool.padding
                 )
+        )
+
+    # Squeeze layer
+    layers.append(
+            Lambda(lambda x: backend.squeeze(x, axis=1))
         )
 
     # Rate modifier layer

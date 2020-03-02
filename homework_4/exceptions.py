@@ -13,15 +13,20 @@ class ConfigNotFoundException(Exception):
 class DatasetNotFoundException(Exception):
 
 	def __init__(self, dataset_name):
-		super().__init__("Dataset {} not found in dataset.py module".format(dataset_name))
+		super().__init__("Dataset {} not found in datasets folder".format(dataset_name))
 
 class ModelNotFoundException(Exception):
 
 	def __init__(self, model_name):
-		super().__init__("Model {} not found in model.py module".format(model_name))
+		super().__init__("Model {} not found in models folder".format(model_name))
 
 class CallbackNotFoundException(Exception):
 
 	def __init__(self, callback_name):
-		super().__init__("Callback {} not found in callbacks.py or tensorflow.keras.callbacks modules".format(
+		super().__init__("Callback {} not found in callbacks folder".format(
 			callback_name))
+
+class EvaluationFunctionNotFoundException(Exception):
+
+	def __init__(self, func_name):
+		super().__init__("Evaluation function {} not found in evaluation_functions folder".format(func_name))

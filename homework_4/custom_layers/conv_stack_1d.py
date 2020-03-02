@@ -5,7 +5,7 @@ from tensorflow.keras import regularizers
 from .util import pipe_model
 
 def conv_stack_1d(filters, kernels, strides, max_pool_sizes, batch_norms=0, padding="same", activation="elu", l2=0,
-    cross_filter_lambda=0, activation_lambda=0):
+    cross_filter_lambda=0, activation_lambda=0, names=None):
     """Represents a stack of convolutional layers"""
 
     # If padding is one word or default, extend into a uniform list
@@ -20,6 +20,10 @@ def conv_stack_1d(filters, kernels, strides, max_pool_sizes, batch_norms=0, padd
     if type(activation) != list:
         activation = [activation]*len(filters)
 
+    # If names is one word or default, extend into a uniform list
+    if type(names) != list:
+        names = [names]*len(filters)
+
     layers = []
     for i in range(len(filters)):
 
@@ -30,7 +34,8 @@ def conv_stack_1d(filters, kernels, strides, max_pool_sizes, batch_norms=0, padd
                             strides=strides[i],
                             padding=padding[i],
                             activation=activation[i],
-                            kernel_regularizer=regularizers.l2(l2)
+                            kernel_regularizer=regularizers.l2(l2),
+                            name=names[i]
                 ))
         else:
             layers.append(Conv1D(
@@ -38,7 +43,8 @@ def conv_stack_1d(filters, kernels, strides, max_pool_sizes, batch_norms=0, padd
                             kernel_size=kernels[i],
                             strides=strides[i],
                             padding=padding[i],
-                            activation=activation[i]
+                            activation=activation[i],
+                            name=names[i]
                 ))
 
         if batch_norms[i] == 1:

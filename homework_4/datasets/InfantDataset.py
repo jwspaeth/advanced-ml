@@ -18,17 +18,20 @@ class InfantDataset:
     def __init__(self, exp_cfg=None):
 
         if exp_cfg is not None:
-            self.shape = exp_cfg.dataset.shape
-            self.offset = exp_cfg.dataset.offset
-            self.feature_names = exp_cfg.dataset.feature_names
-            self.train_subject_names = exp_cfg.dataset.train_subject_names
-            self.val_subject_names = exp_cfg.dataset.val_subject_names
+            self.set_fields(exp_cfg)
         else:
             self.shape = "sigmoid"
             self.offset = 0
             self.feature_names = []
             self.train_subject_names = []
             self.val_subject_names = []
+
+    def set_fields(self, exp_cfg):
+        self.shape = exp_cfg.dataset.shape
+        self.offset = exp_cfg.dataset.offset
+        self.feature_names = exp_cfg.dataset.feature_names
+        self.train_subject_names = exp_cfg.dataset.train_subject_names
+        self.val_subject_names = exp_cfg.dataset.val_subject_names
 
     def get_input_size(self):
         return (15000, len(self.feature_names))

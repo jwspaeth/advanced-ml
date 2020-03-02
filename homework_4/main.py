@@ -9,6 +9,7 @@ import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
+from yacs.config import load_cfg
 
 from config.config_handler import config_handler
 from exceptions import MissingConfigArgException
@@ -44,6 +45,15 @@ def get_exp_num():
     for arg in sys.argv:
         if "-exp_num=" in arg:
             return int(arg.replace("-exp_num=", ""))
+
+def get_cfg_from_file(fbase):
+    with open(fbase + "model_and_cfg/exp_cfg", "rt") as cfg_file:
+        return load_cfg(cfg_file)
+
+def get_results_from_file(fbase):
+    filename = fbase + "results_dict.pkl"
+    with open(filename, "rb") as fp:
+        return pickle.load(fp)
 
 def create_index_log(cfg_handler):
     """Write index to file that describes experiment hyperparameters"""
@@ -109,32 +119,50 @@ def evaluate(model=None):
     """
     Evaluation only works on existing models and cached results. The model can be fed as an argument,
     or reloaded through the configuration file. If reloaded, it will save results into
-    the original experiment's directory. Can evaluate one experiment at a time.
+    the original experiment's directory.
     """
 
     # Get configuration values
     cfg_name = get_cfg_name()
     experiment_num = get_exp_num()
     cfg_handler = config_handler(cfg_name)
-    exp_cfg = cfg_handler.get_experiment(experiment_num)
+    # Might want to return evaluation_cfg, then load previous exp_cfg from file. This works for now though.
+    filename, exp_cfg = cfg_handler.get_experiment(experiment_num)
+
+    # Define fbase and create tree
+    fbase = "results/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase += "{}/".format(exp_cfg.save.experiment_batch_name)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase += "experiment_{}/".format(experiment_num)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+
+    # Create print mechanisms
+    reset_log_files(fbase, exp_cfg.mode)
+    redirect_stdout(fbase, exp_cfg.mode)
+    redirect_stderr(fbase, exp_cfg.mode)
+
+    # Load original configuration for this experiment and the associated results directory
+    revived_cfg = get_cfg_from_file(fbase)
+    results = get_results_from_file(fbase)
 
     # Load dataset
     dataset = cfg_handler.get_dataset(exp_cfg)
 
     # Load model
     if model is None:
-        if exp_cfg.model.reload_path == "":
-            raise Exception("Error: evaluation only works on existing model. Must model as an argument" +
-                " or specify reload path to experiment")
-        else:
-            model = cfg_handler.get_model(exp_cfg=exp_cfg)
+        model = cfg_handler.get_model(exp_cfg=exp_cfg, filename=filename)
+    model.summary()
 
     # Load evaluation functions
     evaluation_functions = cfg_handler.get_evaluation_functions(exp_cfg)
 
     # Use evaluation functions
     for evaluation_function in evaluation_functions:
-        evaluation_function(dataset, model, exp_cfg)
+        evaluation_function(dataset, model, exp_cfg, revived_cfg, results, filename)
 
 def train():
 
@@ -156,9 +184,9 @@ def train():
         os.mkdir(fbase)
 
     # Create print mechanisms
-    reset_log_files(cfg_handler, fbase)
-    redirect_stdout(cfg_handler, fbase)
-    redirect_stderr(cfg_handler, fbase)
+    reset_log_files(fbase, exp_cfg.mode)
+    redirect_stdout(fbase, exp_cfg.mode)
+    redirect_stderr(fbase, exp_cfg.mode)
 
     # Cache configuration for future reload
     save_cfg(exp_cfg, fbase)
@@ -183,7 +211,7 @@ def train():
     # Compile model
     model.compile(
         optimizer=exp_cfg.train.optimizer,
-        loss=exp_cfg.train.loss,
+        loss=cfg_handler.get_loss(exp_cfg.train.loss),
         metrics=exp_cfg.train.metrics)
     model.summary()
 
@@ -250,7 +278,7 @@ def log_results(data, model, exp_cfg, fbase):
         os.mkdir("{}/model_and_cfg/".format(fbase))
 
     # Save model
-    model.save("{}/model_and_cfg/".format(fbase), save_format="tf")
+    model.save("{}/model_and_cfg/saved_model.h5".format(fbase), save_format="tf")
 
     # Save brief results for human readability
     with open("{}results_brief.txt".format(fbase), "w") as f:
@@ -270,29 +298,36 @@ def save_cfg(exp_cfg, fbase):
     with open(filename, "wt") as f:
         f.write(exp_cfg.dump())
 
-def reset_log_files(cfg_handler, fbase):
+def reset_log_files(fbase, mode):
+
+    fbase += "logs/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+
     # File path
-    out_filename = fbase + "out_log.txt"
-    with open(out_filename, "w") as f:
+    with open("{}{}_out_log.txt".format(fbase, mode), "w") as f:
         pass
 
-    err_filename = fbase + "err_log.txt"
-    with open(err_filename, "w") as f:
+    with open("{}{}_err_log.txt".format(fbase, mode), "w") as f:
         pass
 
-def redirect_stdout(cfg_handler, fbase):
+def redirect_stdout(fbase, mode):
 
-    filename = fbase + "out_log.txt"
+    fbase += "logs/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
 
-    sys.stdout = open(filename, mode="a")
+    sys.stdout = open("{}{}_out_log.txt".format(fbase, mode), mode="a")
 
     print("--------Stdout Start--------")
 
-def redirect_stderr(cfg_handler, fbase):
+def redirect_stderr(fbase, mode):
 
-    filename = fbase + "err_log.txt"
+    fbase += "logs/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
 
-    sys.stderr = open(filename, mode="a")
+    sys.stderr = open("{}{}_err_log.txt".format(fbase, mode), mode="a")
 
     print("--------Stderr Start--------", file=sys.stderr)
 

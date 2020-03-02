@@ -1,4 +1,5 @@
 
+import os
 import json
 import copy
 
@@ -16,6 +17,9 @@ class FileMetricLogger(keras_callbacks.Callback):
 
     def __init__(self, fbase, exp_cfg=None):
         super().__init__()
+        fbase += "logs/"
+        if not os.path.exists(fbase):
+            os.mkdir(fbase)
         self.file_path = fbase + "metric_logs.txt"
         with open(self.file_path, "w") as f:
             pass
