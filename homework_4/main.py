@@ -9,7 +9,6 @@ import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
-from yacs.config import load_cfg
 
 from config.config_handler import config_handler
 from exceptions import MissingConfigArgException
@@ -45,10 +44,6 @@ def get_exp_num():
     for arg in sys.argv:
         if "-exp_num=" in arg:
             return int(arg.replace("-exp_num=", ""))
-
-def get_cfg_from_file(fbase):
-    with open(fbase + "model_and_cfg/exp_cfg", "rt") as cfg_file:
-        return load_cfg(cfg_file)
 
 def get_results_from_file(fbase):
     filename = fbase + "results_dict.pkl"
@@ -146,7 +141,7 @@ def evaluate(model=None):
     redirect_stderr(fbase, exp_cfg.mode)
 
     # Load original configuration for this experiment and the associated results directory
-    revived_cfg = get_cfg_from_file(fbase)
+    revived_cfg = cfg_handler.get_cfg_from_file(fbase)
     results = get_results_from_file(fbase)
 
     # Load dataset
@@ -154,7 +149,7 @@ def evaluate(model=None):
 
     # Load model
     if model is None:
-        model = cfg_handler.get_model(exp_cfg=exp_cfg, filename=filename)
+        model = cfg_handler.get_model(input_size=dataset.get_input_size(), exp_cfg=exp_cfg, filename=filename)
     model.summary()
 
     # Load evaluation functions
@@ -278,7 +273,7 @@ def log_results(data, model, exp_cfg, fbase):
         os.mkdir("{}/model_and_cfg/".format(fbase))
 
     # Save model
-    model.save("{}/model_and_cfg/saved_model.h5".format(fbase), save_format="tf")
+    model.save("{}/model_and_cfg/saved_weights.h5".format(fbase), save_format="tf")
 
     # Save brief results for human readability
     with open("{}results_brief.txt".format(fbase), "w") as f:

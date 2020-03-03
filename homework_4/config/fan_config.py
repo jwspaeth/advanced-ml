@@ -2,15 +2,11 @@
 from yacs.config import CfgNode as CN
 from custom_losses import fan_mse
 
-# Ways around this:
-# 	• Manually reload with exp_cfg and weights
-# 	• Don't save custom objects (may not need after doing above)
-
 # Construct root
 _D = CN()
 
 # Training or evaluation
-_D.mode = "train"
+_D.mode = "eval"
 
 # Save parameters
 _D.save = CN()
@@ -67,7 +63,8 @@ _D.callbacks.names = ["FileMetricLogger"]
 # Evaluation parameters
 _D.evaluate = CN()
 _D.evaluate.reload_path = "results/fan_dummy_test/*/"
-_D.evaluate.evaluation_functions = ["test_func", "create_ranked_filters"]
+#_D.evaluate.evaluation_functions = ["test_func", "create_ranked_filters"]
+_D.evaluate.evaluation_functions = ["test_func"]
 
 # Misc parameters
 _D.misc = CN()
