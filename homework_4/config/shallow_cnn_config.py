@@ -37,7 +37,7 @@ _D.model.reload_path = ""
 
 # Training parameters
 _D.train = CN()
-_D.train.optimizer = "adam"
+_D.train.learning_rate = .001
 _D.train.epochs = 200
 _D.train.batch_size = 32
 _D.train.loss = "mse"

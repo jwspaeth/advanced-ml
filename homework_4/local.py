@@ -14,17 +14,18 @@ from datasets import Core50Dataset
 
 def main():
 
-    batch_name = "shallow_test_1"
+    batch_name = "very_shallow_test_1"
     fbase = "results/{}/".format(batch_name)
 
     # Load experiment batch
     results = load_batch_results(fbase)
 
     # Create list of validation accuracy curves
+    argmin_losses = [( np.amin(result["history"]["val_loss"]), np.argmin(result["history"]["val_loss"]) ) for i, result in enumerate(results)]
     acc_curves = [result["history"]["val_acc"] for i, result in enumerate(results)]
 
     # Plot learning curves
-    plot_learning_curves(fbase, acc_curves, "Validation")
+    plot_learning_curves(fbase, argmin_losses, acc_curves, "Validation")
 
     # Create list of ROC curves
     all_predictions = [result["predict_val"] for result in results]
@@ -67,22 +68,27 @@ def generate_roc_curve(outs, predictions):
 
         return curve
 
-def plot_learning_curves(fbase, curves, set_name):
+def plot_learning_curves(fbase, argmin_losses, curves, set_name):
     if not os.path.exists(fbase):
         os.mkdir(fbase)
 
+    acc_sum = 0
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    for curve in curves:
-        vmax = np.amax(curve)
-        emax = np.argmax(curve)
-        ax.plot(curve, label="Best: Accuracy {:.2f}, Epoch {}".format(vmax, emax))
-    plt.title("{} Learning Curves".format(set_name))
-    plt.legend()
+    for i, curve in enumerate(curves):
+        loss = argmin_losses[i][0]
+        vmax = curve[argmin_losses[i][1]]
+        acc_sum += vmax
+        ax.plot(curve, label="Best Loss {:.2f}:  Epoch {}, Accuracy {:.2f}".format(argmin_losses[i][0], argmin_losses[i][1], vmax))
+    plt.title("{} Learning Curves -- Shallow CNN".format(set_name))
+    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
     plt.ylabel("Accuracy")
     plt.xlabel("Epochs")
 
-    fig.savefig(fbase + "learning_curves.png", dpi=fig.dpi)
+    fig.savefig(fbase + "learning_curves.png", dpi=fig.dpi, bbox_inches="tight")
+
+    with open("{}mean_validation.txt".format(fbase), "w") as f:
+        f.write("Average accuracy: {}".format(acc_sum/len(curves)))
 
 def plot_roc_curves(fbase, curves, set_name):
     if not os.path.exists(fbase):
@@ -93,7 +99,7 @@ def plot_roc_curves(fbase, curves, set_name):
     ax = fig.add_subplot(1, 1, 1)
     for curve in curves:
         ax.plot(curve["fpr"], curve["tpr"], 'r', label='AUC = {:.3f}'.format(curve["auc"]))
-    plt.title("{} ROC Curves".format(set_name))
+    plt.title("{} ROC Curves -- Shallow CNN".format(set_name))
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate') 
 

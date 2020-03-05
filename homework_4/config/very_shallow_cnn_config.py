@@ -9,7 +9,7 @@ _D.mode = "train"
 
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "deep_dummy_test"
+_D.save.experiment_batch_name = "very_shallow_test_1"
 
 # Dataset parameters
 _D.dataset = CN()
@@ -28,7 +28,7 @@ _D.model.conv.max_pool_sizes = [2]
 _D.model.conv.batch_norms = [1]
 _D.model.dense = CN()
 _D.model.dense.hidden_sizes = [100]
-_D.model.dense.dropout = .5
+_D.model.dense.dropout = 0
 _D.model.dense.batch_norms = [1]
 _D.model.output = CN()
 _D.model.output.output_size = 2
@@ -37,7 +37,7 @@ _D.model.reload_path = ""
 
 # Training parameters
 _D.train = CN()
-_D.train.optimizer = "adam"
+_D.train.learning_rate = .001
 _D.train.epochs = 200
 _D.train.batch_size = 32
 _D.train.loss = "mse"
@@ -48,7 +48,7 @@ _D.train.verbose = 2
 _D.callbacks = CN()
 _D.callbacks.names = ["EarlyStopping", "FileMetricLogger"]
 _D.callbacks.EarlyStopping = CN()
-_D.callbacks.EarlyStopping.patience = 25
+_D.callbacks.EarlyStopping.patience = 50
 _D.callbacks.EarlyStopping.min_delta = .0001
 
 # Evaluation parameters
@@ -56,7 +56,7 @@ _D.evaluate = CN()
 
 # Misc parameters
 _D.misc = CN()
-_D.misc.default_duplicate = 1 # Duplicates experiments by this amount. Only activates if all options are empty
+_D.misc.default_duplicate = 5 # Duplicates experiments by this amount. Only activates if all options are empty
 
 # Construct list of configuration keys and their possible options
 # • If the key is in the list, the default is overwritten, unless its corresponding value list is empty
