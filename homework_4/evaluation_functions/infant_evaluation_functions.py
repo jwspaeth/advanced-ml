@@ -3,7 +3,7 @@ from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import numpy as np
 
-def test_func(*args):
+def infant_test_func(*args):
 	print("Evaluation worked for filename {}!".format(args[5]))
 
 def create_ranked_filters(dataset, model, exp_cfg, revived_cfg, results, filename):

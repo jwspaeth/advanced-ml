@@ -9,6 +9,7 @@ import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
+from tensorflow.keras.optimizers import Adam
 
 from config.config_handler import config_handler
 from exceptions import MissingConfigArgException
@@ -196,7 +197,11 @@ def train():
     data_dict = dataset.load_data()
 
     print("Train ins shape: {}".format(data_dict["train"]["ins"].shape))
-    print("Train outs shape: {}".format(data_dict["train"]["outs"].shape))
+    if type(data_dict["train"]["outs"]) == list:
+        print("Train outs shape: {}".format(data_dict["train"]["outs"][0].shape))
+        print("Train outs shape: {}".format(data_dict["train"]["outs"][1].shape))
+    else:
+        print("Train outs shape: {}".format(data_dict["train"]["outs"].shape))
 
     # Build model
     model = cfg_handler.get_model(
@@ -205,7 +210,7 @@ def train():
 
     # Compile model
     model.compile(
-        optimizer=exp_cfg.train.optimizer,
+        optimizer=Adam(learning_rate=exp_cfg.train.learning_rate),
         loss=cfg_handler.get_loss(exp_cfg.train.loss),
         metrics=exp_cfg.train.metrics)
     model.summary()

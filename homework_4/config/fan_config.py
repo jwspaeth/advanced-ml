@@ -64,7 +64,7 @@ _D.callbacks.names = ["FileMetricLogger"]
 _D.evaluate = CN()
 _D.evaluate.reload_path = "results/fan_dummy_test/*/"
 #_D.evaluate.evaluation_functions = ["test_func", "create_ranked_filters"]
-_D.evaluate.evaluation_functions = ["test_func"]
+_D.evaluate.evaluation_functions = ["infant_test_func"]
 
 # Misc parameters
 _D.misc = CN()
