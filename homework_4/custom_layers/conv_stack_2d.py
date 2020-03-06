@@ -19,6 +19,7 @@ def conv_stack_2d(filters, kernels, strides, max_pool_sizes, batch_norms=0, padd
     if type(activation) != list:
         activation = [activation]*len(filters)
 
+    # Add convolutions
     layers = []
     for i in range(len(filters)):
 

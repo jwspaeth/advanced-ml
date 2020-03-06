@@ -1,4 +1,6 @@
-
+"""
+Various exceptions needed to run configuration system
+"""
 
 class MissingConfigArgException(Exception):
 

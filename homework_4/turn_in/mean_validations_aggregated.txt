@@ -1,0 +1,4 @@
+Mean Validation Accuracies:
+
+- Deep CNN: 0.8077051997184753
+- Shallow CNN: 0.7246231198310852

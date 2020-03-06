@@ -2,6 +2,7 @@
 import tensorflow.keras.callbacks as keras_callbacks
 
 class EarlyStopping(keras_callbacks.EarlyStopping):
+	"""Simple wrapper for configuration system"""
 
     def __init__(self, exp_cfg, fbase=None):
         super().__init__(

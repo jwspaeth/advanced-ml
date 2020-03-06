@@ -10,6 +10,7 @@ def hidden_stack(hidden_sizes, batch_norms=0, hidden_act="elu", dropout=0, l2=0)
     if type(batch_norms) != list:
         batch_norms = [batch_norms]*len(hidden_sizes)
 
+    # Add dense layers
     layers = []
     for i, size in enumerate(hidden_sizes):
 

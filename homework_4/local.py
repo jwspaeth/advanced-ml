@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+Aggregates results in a batch of experiments
+"""
+
 import sys
 import json
 import pickle
@@ -14,7 +18,8 @@ from datasets import Core50Dataset
 
 def main():
 
-    batch_name = "very_shallow_test_1"
+    # Declare experiment batch
+    batch_name = "shallow_test_1"
     fbase = "results/{}/".format(batch_name)
 
     # Load experiment batch
@@ -36,6 +41,8 @@ def main():
     plot_roc_curves(fbase, roc_curves, "Validation")
 
 def load_batch_results(fbase):
+    """Load the results for the whole batch"""
+
     file_pattern = fbase + "/experiment*/"
     filepaths = glob.glob(file_pattern)
 
@@ -69,9 +76,11 @@ def generate_roc_curve(outs, predictions):
         return curve
 
 def plot_learning_curves(fbase, argmin_losses, curves, set_name):
+    """Plot learning curves for the given curves and losses"""
     if not os.path.exists(fbase):
         os.mkdir(fbase)
 
+    # Accumulate the accuracy values for averaging, and plot curves
     acc_sum = 0
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -80,17 +89,23 @@ def plot_learning_curves(fbase, argmin_losses, curves, set_name):
         vmax = curve[argmin_losses[i][1]]
         acc_sum += vmax
         ax.plot(curve, label="Best Loss {:.2f}:  Epoch {}, Accuracy {:.2f}".format(argmin_losses[i][0], argmin_losses[i][1], vmax))
+    
+    # Organize figure
     plt.title("{} Learning Curves -- Shallow CNN".format(set_name))
     ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
     plt.ylabel("Accuracy")
     plt.xlabel("Epochs")
 
+    # Save figure
     fig.savefig(fbase + "learning_curves.png", dpi=fig.dpi, bbox_inches="tight")
 
+    # Save mean accuracies
     with open("{}mean_validation.txt".format(fbase), "w") as f:
         f.write("Average accuracy: {}".format(acc_sum/len(curves)))
 
 def plot_roc_curves(fbase, curves, set_name):
+    """Plot roc curves given a set of curves"""
+
     if not os.path.exists(fbase):
         os.mkdir(fbase)
 
@@ -99,10 +114,13 @@ def plot_roc_curves(fbase, curves, set_name):
     ax = fig.add_subplot(1, 1, 1)
     for curve in curves:
         ax.plot(curve["fpr"], curve["tpr"], 'r', label='AUC = {:.3f}'.format(curve["auc"]))
+
+    # Organize figure
     plt.title("{} ROC Curves -- Shallow CNN".format(set_name))
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate') 
 
+    # Save figure
     fig.savefig(fbase + "roc_curves.png", dpi=fig.dpi)
 
 if __name__ == "__main__":

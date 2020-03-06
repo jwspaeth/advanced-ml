@@ -6,14 +6,7 @@ import copy
 import tensorflow.keras.callbacks as keras_callbacks
 
 class FileMetricLogger(keras_callbacks.Callback):
-    """Callback that accumulates epoch averages of metrics.
-    This callback is automatically applied to every Keras model.
-    # Arguments
-        stateful_metrics: Iterable of string names of metrics that
-            should *not* be averaged over an epoch.
-            Metrics in this list will be logged as-is in `on_epoch_end`.
-            All others will be averaged in `on_epoch_end`.
-    """
+    """Logs metrics and best validation metrics to file"""
 
     def __init__(self, fbase, exp_cfg=None):
         super().__init__()

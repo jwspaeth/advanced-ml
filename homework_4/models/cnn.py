@@ -9,6 +9,7 @@ def cnn(input_size, exp_cfg):
 
     layers = []
 
+    # Input batch normalization
     layers.append(
             BatchNormalization(axis=exp_cfg.model.input_axis_norm)
         )

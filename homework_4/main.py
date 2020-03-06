@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+"""
+This is built to be a general purpose configuration system for 
+supervised/unsupervised learning tasks.
+Process:
+    (1) Read configuration file
+    (2) Create batch of experiments based on default configuration and options
+    (3) Spit out each experiment as a separate process
+    (4) Within each experiment subprocess, run train and logs results
+    (5) Evaluate functions available after training is complete
+"""
+
 import pickle
 import os
 import sys
@@ -33,6 +44,7 @@ def main():
         start_job(cfg_name, i, cfg_handler.get_mode())
 
 def get_cfg_name():
+    """Get cfg name from the command line args"""
 
     for arg in sys.argv:
         if "-cfg_name=" in arg:
@@ -41,12 +53,14 @@ def get_cfg_name():
     raise MissingConfigArgException()
 
 def get_exp_num():
+    """Get experiment number from the command line args"""
 
     for arg in sys.argv:
         if "-exp_num=" in arg:
             return int(arg.replace("-exp_num=", ""))
 
 def get_results_from_file(fbase):
+
     filename = fbase + "results_dict.pkl"
     with open(filename, "rb") as fp:
         return pickle.load(fp)
@@ -54,15 +68,16 @@ def get_results_from_file(fbase):
 def create_index_log(cfg_handler):
     """Write index to file that describes experiment hyperparameters"""
 
+    # Create directories
     fbase = "results/"
     if not os.path.exists(fbase):
         os.mkdir(fbase)
-
     batch_name = cfg_handler.get_experiment(0).save.experiment_batch_name
     fbase = "{}{}/".format(fbase, batch_name)
     if not os.path.exists(fbase):
         os.mkdir(fbase)
 
+    # Write index log to file
     with open('{}index.txt'.format(fbase), 'w') as f:
         f.write("Number of experiments: {}\n".format(cfg_handler.get_num_experiments()))
         json.dump(cfg_handler.get_options(), f)
@@ -161,6 +176,7 @@ def evaluate(model=None):
         evaluation_function(dataset, model, exp_cfg, revived_cfg, results, filename)
 
 def train():
+    """Trains one ML model"""
 
     # Get configuration values
     cfg_name = get_cfg_name()
@@ -299,6 +315,7 @@ def save_cfg(exp_cfg, fbase):
         f.write(exp_cfg.dump())
 
 def reset_log_files(fbase, mode):
+    """Clears all logs files"""
 
     fbase += "logs/"
     if not os.path.exists(fbase):
@@ -312,6 +329,7 @@ def reset_log_files(fbase, mode):
         pass
 
 def redirect_stdout(fbase, mode):
+    """Redirect stdout to file"""
 
     fbase += "logs/"
     if not os.path.exists(fbase):
@@ -322,6 +340,7 @@ def redirect_stdout(fbase, mode):
     print("--------Stdout Start--------")
 
 def redirect_stderr(fbase, mode):
+    """Redirect stderr to file"""
 
     fbase += "logs/"
     if not os.path.exists(fbase):

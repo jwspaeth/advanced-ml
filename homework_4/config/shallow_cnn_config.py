@@ -9,7 +9,7 @@ _D.mode = "train"
 
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "shallow_dummy_test"
+_D.save.experiment_batch_name = "shallow_test_1"
 
 # Dataset parameters
 _D.dataset = CN()
@@ -20,16 +20,16 @@ _D.model = CN()
 _D.model.name = "cnn"
 _D.model.input_axis_norm = 3
 _D.model.conv = CN()
-_D.model.conv.filters = [5, 10, 15]
-_D.model.conv.kernels = [2, 2, 2]
-_D.model.conv.strides = [1, 1, 1]
+_D.model.conv.filters = [10]
+_D.model.conv.kernels = [3]
+_D.model.conv.strides = [2]
 _D.model.conv.l2 = 0
-_D.model.conv.max_pool_sizes = [4, 4, 4]
-_D.model.conv.batch_norms = [1, 1, 1]
+_D.model.conv.max_pool_sizes = [2]
+_D.model.conv.batch_norms = [1]
 _D.model.dense = CN()
-_D.model.dense.hidden_sizes = [5, 5]
-_D.model.dense.dropout = .5
-_D.model.dense.batch_norms = [1, 1]
+_D.model.dense.hidden_sizes = [100]
+_D.model.dense.dropout = 0
+_D.model.dense.batch_norms = [1]
 _D.model.output = CN()
 _D.model.output.output_size = 2
 _D.model.output.activation = "softmax"
@@ -56,19 +56,11 @@ _D.evaluate = CN()
 
 # Misc parameters
 _D.misc = CN()
-_D.misc.default_duplicate = 1 # Duplicates experiments by this amount. Only activates if all options are empty
+_D.misc.default_duplicate = 5 # Duplicates experiments by this amount. Only activates if all options are empty
 
 # Construct list of configuration keys and their possible options
 # • If the key is in the list, the default is overwritten, unless its corresponding value list is empty
-all_options_dict = {
-	"model.conv.filters": [],
-	"model.conv.kernels": [],
-	"model.conv.strides": [],
-	"model.conv.l2": [],
-	"model.dense": [],
-	"model.dense.hidden_sizes": [],
-	"model.dense.dropout": []
-}
+all_options_dict = {}
 
 
 
