@@ -10,7 +10,7 @@ _D.mode = "eval"
 
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "fan_dummy_test"
+_D.save.experiment_batch_name = "fan_example"
 
 # Dataset parameters
 _D.dataset = CN()

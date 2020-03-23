@@ -4,6 +4,11 @@ from tensorflow.keras import regularizers
 
 from .util import pipe_model
 
+
+####
+# layer = Dense(blah)
+# output = layer(input)
+
 def hidden_stack(hidden_sizes, batch_norms=0, hidden_act="elu", dropout=0, l2=0):
     """Represents a stack of neural layers"""
 

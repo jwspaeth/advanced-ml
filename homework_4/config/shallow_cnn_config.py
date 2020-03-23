@@ -9,7 +9,7 @@ _D.mode = "train"
 
 # Save parameters
 _D.save = CN()
-_D.save.experiment_batch_name = "shallow_test_1"
+_D.save.experiment_batch_name = "shallow_test_4"
 
 # Dataset parameters
 _D.dataset = CN()
