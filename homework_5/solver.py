@@ -10,6 +10,20 @@ import tensorflow.keras as keras
 from agents import DQN, TargetDQN
 from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
 
+# Fix choice with replacement
+
+# TargetDQN 1 397 AVG: [32, 16]; lr=.01; target_update_freq=25; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+# TargetDQN 2 431 AVG: [32, 16]; lr=.01; target_update_freq=50; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+# TargetDQN 3 393 AVG: [32, 16]; lr=.001; target_update_freq=25; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+# TargetDQN 4 ??? AVG: [32, 16]; lr=.001; target_update_freq=50; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+# DQN 1 ??? AVG: [32, 16]; lr=.01; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+# DQN 2 ??? AVG: [32, 16]; lr=.001; gamma=.99; epsilon_decay=250; batch size 2000; single batch
+
+### Pick best
+# 32 batch size
+# Try batch training from entire buffer
+# Try new network architecture [16, 8]
+
 def main():
 
     # Create environment
@@ -18,23 +32,24 @@ def main():
     print("Action space: {}".format(env.action_space))
 
     # Create agent configuration
-    agent_class = TargetDQN
+    agent_class = DQN
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
     policy = epsilon_greedy_policy
     loss_fn = keras.losses.mean_squared_error
-    epsilon = epsilon_episode_decay(1, .01, 200)
+    epsilon = epsilon_episode_decay(1, .01, 250)
+    #epsilon = 1
     gamma = .99
     buffer_size = 10000
     n_units = [32, 16]
     learning_rate = .01
     learning_delay = 0
     verbose = True
-    target_update_freq = 25
+    target_update_freq = 50
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 100
+    silent_episodes.n_episodes = 500
     silent_episodes.n_steps = 500
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000
@@ -42,7 +57,7 @@ def main():
 
     # Create visible episodes configuration
     visible_episodes = CN()
-    visible_episodes.n_episodes = 5
+    visible_episodes.n_episodes = 1
     visible_episodes.n_steps = 500
     visible_episodes.render_flag = True
     visible_episodes.batch_size = 2000
@@ -89,7 +104,7 @@ def main():
 
     # Plot results
     print("--Plotting--")
-    fig, axs = plt.subplots(3, 2)
+    fig, axs = plt.subplots(2, 2)
     
     # Take mean over last 100 episodes
     if len(agent.reward_log) >= 100:
@@ -110,9 +125,6 @@ def main():
 
     axs[1, 1].plot(agent.epsilon_log, label="Epsilon")
     axs[1, 1].legend()
-
-    axs[2, 0].plot(agent.collection_time, label="Collection Time")
-    axs[2, 0].legend()
 
     plt.show()
 

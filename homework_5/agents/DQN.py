@@ -34,7 +34,6 @@ class DQN:
         self.reward_log = []
         self.loss_log = []
         self.deque_log = []
-        self.collection_time = []
         self.verbose = verbose
         self.replay_buffer = {
                     "states": deque(maxlen=buffer_size),
@@ -157,9 +156,7 @@ class DQN:
         # Fetch batch
         batch_inds = self.sample_experience_inds(batch_size)
         batch = self.sample_experience(batch_inds)
-        print("\tBatching elapsed time: {}".format(time.time()-batch_time_start))
 
-        learn_time_start = time.time()
         # Create target q values, with mask to disregard irrelevant actions
         next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
         max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
@@ -176,7 +173,32 @@ class DQN:
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 
-        print("\tLearning elapsed time: {}".format(time.time()-learn_time_start))
+    def learning_epoch(self, batch_size=100):
+        '''
+        Train the model with one batch by sampling from replay buffer
+        Use the gradient tape method
+        '''
+
+        batch_time_start = time.time()
+        # Fetch batch
+        batch_inds = self.sample_experience_inds(batch_size)
+        batch = self.sample_experience(batch_inds)
+
+        # Create target q values, with mask to disregard irrelevant actions
+        next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
+        max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
+        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
+        mask = tf.one_hot(batch["actions"], self.action_size) # Create mask to mask actions not taken
+
+        # Use optimizer to apply gradient to model
+        with tf.GradientTape() as tape:
+            all_Q_values = self.get_current_Q_values(batch["states"]) # Get all possible q values from the states
+            masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
+            Q_values = tf.reduce_sum(masked_Q_values, axis=1) # Get the sum to reduce to action taken
+            loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
+            self.loss_log.append(loss) # Append to log
+            grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
+            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 
 
     def learning_step_mod(self, batch_size=100):
@@ -206,15 +228,11 @@ class DQN:
         Execute one episode, which terminates when done if flagged or step limit is reached
         '''
 
-        start_time = time.time()
-
         # Initialize vars
         reward_total = 0
         step = 0
         done = False
         state = env.reset()
-
-        collection_time_start = time.time()
         while (n_steps is None or step < n_steps) and not done: # Continue till step count, or until done
 
             if render_flag: # Create visualization for environment
@@ -225,8 +243,6 @@ class DQN:
             step += 1
             if done:
                 break
-        print("\tCollection elapsed time: {}".format(time.time()-collection_time_start))
-        self.collection_time.append(time.time()-collection_time_start)
 
         # If train flag and episode above some threshold (to fill buffer), train
         if train and self.episode > self.learning_delay: 
@@ -239,7 +255,6 @@ class DQN:
 
         if verbose:
             print("\tReward: {}".format(reward_total))
-            print("\tEpisode elapsed time: {}".format(time.time()-start_time))
 
     def execute_episodes(self, env, n_episodes, n_steps, render_flag=False, batch_size=100, verbose=False,
         train=True):
