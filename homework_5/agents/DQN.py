@@ -1,4 +1,5 @@
 
+import time
 from collections import deque
 
 import numpy as np
@@ -88,11 +89,12 @@ class DQN:
         '''
         Take one step in the environment based on the agent parameters
         '''
-        
+
         action = self.policy(state, self.model, self.get_epsilon()) # Query policy
 
         next_state, reward, done, info = env.step(action) # Query environment
         self.memorize(state, action, reward, next_state, done) # Log
+
         return next_state, reward, done, info
 
     def memorize(self, state, action, reward, next_state, done):
@@ -150,10 +152,13 @@ class DQN:
         Use the gradient tape method
         '''
 
+        batch_time_start = time.time()
         # Fetch batch
         batch_inds = self.sample_experience_inds(batch_size)
         batch = self.sample_experience(batch_inds)
+        print("\tBatching elapsed time: {}".format(time.time()-batch_time_start))
 
+        learn_time_start = time.time()
         # Create target q values, with mask to disregard irrelevant actions
         next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
         max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
@@ -169,6 +174,8 @@ class DQN:
             self.loss_log.append(loss) # Append to log
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+
+        print("\tLearning elapsed time: {}".format(time.time()-learn_time_start))
 
 
     def learning_step_mod(self, batch_size=100):
@@ -198,11 +205,15 @@ class DQN:
         Execute one episode, which terminates when done if flagged or step limit is reached
         '''
 
+        start_time = time.time()
+
         # Initialize vars
         reward_total = 0
         step = 0
         done = False
         state = env.reset()
+
+        collection_time_start = time.time()
         while (n_steps is None or step < n_steps) and not done: # Continue till step count, or until done
 
             if render_flag: # Create visualization for environment
@@ -213,17 +224,20 @@ class DQN:
             step += 1
             if done:
                 break
+        print("\tCollection elapsed time: {}".format(time.time()-collection_time_start))
 
         # If train flag and episode above some threshold (to fill buffer), train
         if train and self.episode > self.learning_delay: 
             self.learning_step(batch_size=batch_size)
 
-        if verbose:
-            print("\tReward: {}".format(reward_total))
         self.reward_log.append(reward_total)
         self.epsilon_log.append(self.get_epsilon())
         self.deque_log.append(len(self.replay_buffer["states"]))
         self.episode += 1
+
+        if verbose:
+            print("\tReward: {}".format(reward_total))
+            print("\tEpisode elapsed time: {}".format(time.time()-start_time))
 
     def execute_episodes(self, env, n_episodes, n_steps, render_flag=False, batch_size=100, verbose=False,
         train=True):

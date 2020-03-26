@@ -26,15 +26,15 @@ def main():
     epsilon = epsilon_episode_decay(1, .01, 200)
     gamma = .99
     buffer_size = 10000
-    n_units = [40]
-    learning_rate = .001
+    n_units = [32, 16]
+    learning_rate = .01
     learning_delay = 0
     verbose = True
     target_update_freq = 25
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 400
+    silent_episodes.n_episodes = 500
     silent_episodes.n_steps = 500
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000

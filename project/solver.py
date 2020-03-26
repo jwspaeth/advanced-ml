@@ -48,7 +48,7 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes_n_episodes = 1
+    silent_episodes_n_episodes = 20
     silent_episodes_n_steps = None
     silent_episodes_render_flag = False
     silent_episodes_batch_size = 2000
@@ -56,7 +56,7 @@ def main():
 
     # Create visible episodes configuration
     visible_episodes = CN()
-    visible_episodes_n_episodes = 5
+    visible_episodes_n_episodes = 1
     visible_episodes_n_steps = None
     visible_episodes_render_flag = True
     visible_episodes_batch_size = 2000
