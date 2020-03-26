@@ -89,7 +89,7 @@ def main():
 
     # Plot results
     print("--Plotting--")
-    fig, axs = plt.subplots(2, 2)
+    fig, axs = plt.subplots(3, 2)
     
     # Take mean over last 100 episodes
     if len(agent.reward_log) >= 100:
@@ -110,6 +110,9 @@ def main():
 
     axs[1, 1].plot(agent.epsilon_log, label="Epsilon")
     axs[1, 1].legend()
+
+    axs[2, 0].plot(agent.collection_time, label="Collection Time")
+    axs[2, 0].legend()
 
     plt.show()
 
