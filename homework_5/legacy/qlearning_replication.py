@@ -2,6 +2,7 @@
 
 import time
 from collections import deque
+import random
 
 import gym
 import numpy as np
@@ -144,10 +145,9 @@ class MyAgent:
         '''
         Log the experience from one step into the replay buffer as a dictionary
         '''
-
         state =  np.array(state, ndmin=2)
         next_state =  np.array(next_state, ndmin=2)
-        
+
         self.replay_buffer["states"].append(state)
         self.replay_buffer["actions"].append(action)
         self.replay_buffer["rewards"].append(reward)
@@ -171,6 +171,26 @@ class MyAgent:
             batch[key] = [self.replay_buffer[key][index] for index in indices]
 
         return batch
+
+    def sample_epoch(self, batch_size):
+        '''
+        Sample batch_size number of experience from the replay buffer
+        '''
+
+        indices = list(range(len(self.replay_buffer["states"])))
+        random.shuffle(indices)
+
+        batches = []
+        while len(indices) > batch_size:
+            current_inds = indices[:batch_size]
+            indices = indices[batch_size:]
+
+            batch = {}
+            for key in self.replay_buffer.keys():
+                batch[key] = [self.replay_buffer[key][index] for index in current_inds]
+                batches.append(batch)
+
+        return batches
 
     def learning_step(self, batch_size=100):
         '''
@@ -196,6 +216,36 @@ class MyAgent:
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 
+    def learning_epoch(self, batch_size=100):
+        '''
+        Train the model with one batch by sampling from replay buffer
+        '''
+
+        # Fetch batch
+        batches = self.sample_epoch(batch_size)
+
+        loss_total = 0
+        for i, batch in enumerate(batches):
+
+            # Create target q values, with mask to disregard irrelevant actions
+            next_Q_values = self.model.predict(batch["next_states"])
+            max_next_Q_values = np.max(next_Q_values, axis=1)
+            target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
+            mask = tf.one_hot(batch["actions"], self.action_size)
+
+            # Use optimizer to apply gradient to model
+            with tf.GradientTape() as tape:
+                all_Q_values = self.model(batch["states"]) # Get all possible q values from the states
+                masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
+                Q_values = tf.reduce_sum(masked_Q_values, axis=1, keepdims=True) # Get the sum along each action column
+                loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
+                loss_total += loss
+                grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
+                self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+
+        loss_total /= len(batches)
+        self.loss_log.append(loss_total)
+
     def get_reward_log_average(self):
         
         avg = 0
@@ -206,7 +256,7 @@ class MyAgent:
         return avg
 
     def execute_episode(self, env, n_steps, n_learning_steps=1, 
-        render_flag=False, batch_size=100, verbose=False, train=True, test=False):
+        render_flag=False, batch_size=100, verbose=False, train=True, test=False, train_epoch=False):
         '''
         Execute one episode, which terminates when done if flagged or step limit is reached
         '''
@@ -237,8 +287,13 @@ class MyAgent:
                 break
 
         if train and self.episode > 50:
-            for i in range(n_learning_steps):
-                self.learning_step(batch_size=batch_size)
+            if train_epoch:
+                print("train epoch")
+                self.learning_epoch(batch_size=batch_size)
+            else:
+                print("train batch")
+                for i in range(n_learning_steps):
+                    self.learning_step(batch_size=batch_size)
 
         self.reward_log.append(reward_total)
         self.epsilon_log.append(self.get_epsilon())
@@ -246,7 +301,7 @@ class MyAgent:
         self.episode += 1
 
     def execute_episodes(self, env, n_episodes, n_steps, n_learning_steps=1, 
-        render_flag=False, batch_size=100, verbose=False, train=True, test=False):
+        render_flag=False, batch_size=100, verbose=False, train=True, test=False, train_epoch=False):
         '''
         Execute multiple episodes
         '''
@@ -257,7 +312,7 @@ class MyAgent:
 
             self.execute_episode(env, n_steps, n_learning_steps=n_learning_steps,
                 render_flag=render_flag, batch_size=batch_size, verbose=verbose, train=train,
-                test=test)
+                test=test, train_epoch=train_epoch)
 
             if render_flag:
                 env.close()
@@ -271,7 +326,7 @@ class MyAgentTarget(MyAgent):
 
     def __init__(self, state_size, action_size, policy, loss_fn, 
                 epsilon = 0, gamma = 0.99, 
-                lrate = .001, maxlen = 2000):
+                lrate = .001, maxlen = 2000, target_update_freq=50):
         super().__init__(state_size, action_size, policy, loss_fn, epsilon, gamma, lrate, maxlen)
 
         self.state_size = state_size
@@ -297,6 +352,7 @@ class MyAgentTarget(MyAgent):
         }
         self.optimizer = keras.optimizers.Adam(lr=lrate)
         self.episode = 0
+        self.target_update_freq = target_update_freq
 
     def setup_model(self, n_units, activation='elu'):
         '''
@@ -340,8 +396,63 @@ class MyAgentTarget(MyAgent):
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 
+    def learning_step_2(self, batch_size=100):
+        '''
+        Train the model with one batch by sampling from replay buffer
+        '''
+
+        # Fetch batch
+        batch = self.sample_experience(batch_size)
+
+        # Create target q values, with mask to disregard irrelevant actions
+        next_Q_values = self.target_model.predict(batch["next_states"])
+        max_next_Q_values = np.max(next_Q_values, axis=1)
+        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
+        mask = tf.one_hot(batch["actions"], self.action_size)
+
+        # Use optimizer to apply gradient to model
+        with tf.GradientTape() as tape:
+            all_Q_values = self.model(batch["states"]) # Get all possible q values from the states
+            masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
+            Q_values = tf.reduce_sum(masked_Q_values, axis=1, keepdims=True) # Get the sum along each action column
+            loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
+            self.loss_log.append(loss)
+            grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
+            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+
+    def learning_epoch(self, batch_size=100):
+        '''
+        Train the model with one batch by sampling from replay buffer
+        '''
+
+        # Fetch batch
+        batches = self.sample_epoch(batch_size)
+
+        loss_total = 0
+        for i, batch in enumerate(batches):
+
+            # Create target q values, with mask to disregard irrelevant actions
+            next_Q_values = self.target_model.predict(batch["next_states"])
+            max_next_Q_values = np.max(next_Q_values, axis=1)
+            target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
+            mask = tf.one_hot(batch["actions"], self.action_size)
+
+            # Use optimizer to apply gradient to model
+            with tf.GradientTape() as tape:
+                all_Q_values = self.model(batch["states"]) # Get all possible q values from the states
+                masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
+                Q_values = tf.reduce_sum(masked_Q_values, axis=1, keepdims=True) # Get the sum along each action column
+                loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
+                loss_total += loss
+                grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
+                self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+
+        loss_total /= len(batches)
+        print("\tLoss: {}".format(loss_total))
+        self.loss_log.append(loss_total)
+
     def execute_episode(self, env, n_steps, n_learning_steps=1, render_flag=False,
-        batch_size=100, verbose=False, train=True, test=False):
+        batch_size=100, verbose=False, train=True, test=False, train_epoch=False):
         '''
         Execute one episode, which terminates when done if flagged or step limit is reached
         '''
@@ -372,10 +483,13 @@ class MyAgentTarget(MyAgent):
                 break
 
         if train and self.episode > 50:
+            if train_epoch:
+                self.learning_epoch(batch_size=batch_size)
+            else:
+                for i in range(n_learning_steps):
+                    self.learning_step(batch_size=batch_size)
 
-            for i in range(n_learning_steps):
-                self.learning_step(batch_size=batch_size)
-            if self.episode % 25 == 0:
+            if self.episode % self.target_update_freq == 0:
                 self.update_target_model()
 
         if verbose:
@@ -429,7 +543,8 @@ def runDeepAgent(n_units, env, n_silent_episodes, n_visible_episodes, n_steps, n
                         )
     return deepAgent
 
-def runDeepAgentTarget(n_units, env, n_silent_episodes, n_visible_episodes, n_steps, n_learning_steps=1):
+def runDeepAgentTarget(n_units, env, n_silent_episodes, n_visible_episodes, n_steps, n_learning_steps=1, target_update_freq=50,
+    train_epoch=False, maxlen=2000):
     '''
     Deep agent section
     '''
@@ -439,11 +554,13 @@ def runDeepAgentTarget(n_units, env, n_silent_episodes, n_visible_episodes, n_st
         action_size = env.action_space.n,
         policy = epsilon_greedy_policy,
         loss_fn = keras.losses.mean_squared_error,
-        gamma = 0.95,
-        #epsilon = .1,
-        epsilon = epsilon_episode_decay(1, .01),
-        lrate = .001,
-        maxlen = 100000)
+        gamma = 0.99,
+        #epsilon = .05,
+        epsilon = epsilon_episode_decay(1, .05),
+        lrate = .0001,
+        maxlen = maxlen,
+        target_update_freq = target_update_freq
+        )
     deepAgent.setup_model(n_units=n_units)
 
     print("Deep agent target for {} silent episodes...".format(n_silent_episodes))
@@ -454,8 +571,9 @@ def runDeepAgentTarget(n_units, env, n_silent_episodes, n_visible_episodes, n_st
                         n_steps = n_steps,
                         n_learning_steps = n_learning_steps,
                         render_flag = False,
-                        batch_size = 64,
-                        verbose = True
+                        batch_size = 2000,
+                        verbose = True,
+                        train_epoch=train_epoch
                         )
 
     print("Deep agent target for {} live episodes...".format(n_visible_episodes))
@@ -466,7 +584,7 @@ def runDeepAgentTarget(n_units, env, n_silent_episodes, n_visible_episodes, n_st
                         n_steps = n_steps,
                         n_learning_steps = n_learning_steps,
                         render_flag = True,
-                        batch_size = 64,
+                        batch_size = 2000,
                         verbose = False,
                         test=True
                         )
@@ -510,18 +628,31 @@ def main():
     env = gym.make('CartPole-v1')
 
     print("Setup agent...")
-    print("\tState space: {}".format(env.observation_space.shape))
-    print("\tAction space: {}".format(env.action_space.n))
+    print("\tState space: {}".format(env.observation_space))
+    print("\tState space shape: {}".format(env.observation_space.shape))
+    print("\tAction space: {}".format(env.action_space))
+    print("\tAction space shape: {}".format(env.action_space.n))
 
-    n_learning_steps = 5
-    silent_episodes = 1000
+    n_learning_steps = 1
+    silent_episodes = 10000
     visible_episodes = 5
     steps = None
+    maxlen = 10000
     print("Number of learning steps: {}".format(n_learning_steps))
     print("Number of steps: {}".format(steps))
 
-    #deepAgent1 = runDeepAgent([24, 48], env, silent_episodes, visible_episodes, steps)
-    deepAgent2 = runDeepAgentTarget([32, 16], env, silent_episodes, visible_episodes, steps, n_learning_steps)
+    #deepAgent1 = runDeepAgent([64], env, silent_episodes, visible_episodes, steps)
+    deepAgent2 = runDeepAgentTarget(
+        n_units=[20, 10, 5],
+        env=env,
+        n_silent_episodes=silent_episodes,
+        n_visible_episodes=visible_episodes,
+        n_steps=steps,
+        n_learning_steps=n_learning_steps,
+        target_update_freq=50,
+        train_epoch = False,
+        maxlen=maxlen
+        )
 
     '''
     deepAgent3 = runDeepAgent([32,], env, silent_episodes, visible_episodes, steps)
@@ -540,6 +671,12 @@ def main():
     axs[0, 1].plot(deepAgent2.deque_log, label="Deque Size")
     axs[0, 1].legend()
 
+    pad = [0] * 50
+    axs[1, 0].plot(pad + deepAgent2.loss_log, label="Loss")
+    axs[1, 0].legend()
+
+    axs[1, 1].plot(deepAgent2.epsilon_log, label="Epsilon")
+    axs[1, 1].legend()
     '''
     axs[1, 0].plot(deepAgent3.reward_log, label="Deep Agent 3 -- Avg: {:.2f}".format(deepAgent3.get_reward_log_average()))
     axs[1, 0].set_ylim([0, 200])
