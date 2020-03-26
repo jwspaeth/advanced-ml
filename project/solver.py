@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from yacs.config import CfgNode as CN
 import tensorflow.keras as keras
 
+from models import cnn
 from agents import DQN, TargetDQN
 from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
 
@@ -15,18 +16,31 @@ def main():
     # Create environment
     env = gym.make('CarRacing-v0')
     print("State space: {}".format(env.observation_space))
-    print("Action space: {}".format(env.action_space))
+    print("State space shape: {}".format(env.observation_space.shape))
+    print("Action space: {}".format(env.action_space)) # Steer (-1, 1), Gas (0, 1), Brake (0, 1)
+    print("Action space shape: {}".format(env.action_space.shape))
 
     # Create agent configuration
-    agent_class = TargetDQN
-    state_size = env.observation_space.shape[0]
-    action_size = env.action_space.n
+    agent_class = DQN
+    state_size = env.observation_space.shape
+    action_size = env.action_space.shape
     policy = epsilon_greedy_policy
     loss_fn = keras.losses.mean_squared_error
     epsilon = epsilon_episode_decay(1, .01, 200)
-    gamma = .99
+    gamma = .95
     buffer_size = 10000
-    n_units = [40]
+    model_fn = cnn
+    model_param_dict = {
+            "input_size": state_size,
+            "filters": [10, 15],
+            "kernels": [3, 3],
+            "strides": [2, 2],
+            "max_pool_sizes": [2, 2],
+            "cnn_l2": 0,
+            "dnn_hidden_sizes": [20],
+            "dnn_l2": 0,
+            "output_size": action_size
+            }
     learning_rate = .001
     learning_delay = 0
     verbose = True
@@ -34,8 +48,8 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 400
-    silent_episodes.n_steps = 500
+    silent_episodes.n_episodes = 1
+    silent_episodes.n_steps = None
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000
     silent_episodes.verbose = True
@@ -43,7 +57,7 @@ def main():
     # Create visible episodes configuration
     visible_episodes = CN()
     visible_episodes.n_episodes = 5
-    visible_episodes.n_steps = 500
+    visible_episodes.n_steps = None
     visible_episodes.render_flag = True
     visible_episodes.batch_size = 2000
     visible_episodes.verbose = True
@@ -57,7 +71,8 @@ def main():
         epsilon=epsilon,
         gamma=gamma,
         buffer_size=buffer_size,
-        n_units=n_units,
+        model_fn=model_fn,
+        model_param_dict=model_param_dict,
         learning_rate=learning_rate,
         learning_delay=learning_delay,
         verbose=verbose,
@@ -98,7 +113,7 @@ def main():
         cut = len(agent.reward_log)
     axs[0, 0].plot(agent.reward_log, label="Agent {} -- Avg: {:.2f}".format(agent.type,
         statistics.mean(agent.reward_log[len(agent.reward_log)-cut:])))
-    axs[0, 0].set_ylim([-550, 50])
+    #axs[0, 0].set_ylim([-550, 50])
     axs[0, 0].legend()
     
     axs[0, 1].plot(agent.deque_log, label="Deque Size")

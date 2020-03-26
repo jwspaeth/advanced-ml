@@ -13,7 +13,7 @@ class DQN:
     '''
 
     def __init__(self, state_size, action_size, policy, learning_delay, loss_fn, epsilon, gamma,
-        learning_rate, n_units, buffer_size, verbose=False, **kwargs):
+        learning_rate, buffer_size, model_fn, model_param_dict, verbose=False, **kwargs):
         '''
         Initialize necessary fields
         '''
@@ -27,7 +27,7 @@ class DQN:
         self.epsilon = epsilon
         self.gamma = gamma
         self.optimizer = keras.optimizers.Adam(lr=learning_rate)
-        self.setup_model(n_units)
+        self.setup_model(model_fn, model_param_dict)
 
         self.epsilon_log = []
         self.reward_log = []
@@ -43,39 +43,12 @@ class DQN:
         }
         self.episode = 0
 
-    def build_model(self, n_units, activation="elu"):
-        '''
-        Build a simple sequential model.
-        '''
-
-        model = Sequential()
-        i = 0
-        
-        # Input layer
-        model.add(InputLayer(input_shape=(self.state_size,)))
-        
-        # Loop over hidden layers
-        for n in n_units:
-            model.add(Dense(n, 
-                        activation=activation,
-                        name = "D"+str(i)))
-            i=i+1
-            
-        # model.add(BatchNormalization())
-        # Output layer
-        model.add(Dense(self.action_size, 
-                        activation=None,
-                        name = "D"+str(i)))
-        
-        return model
-
-    def setup_model(self, n_units):
+    def setup_model(self, model_fn, model_param_dict):
         '''
         Compile a simple sequential model
         '''
 
-        model = self.build_model(n_units=n_units)
-        self.model = model
+        self.model = model_fn(**model_param_dict)
         model.summary()
 
     def get_epsilon(self):
