@@ -6,11 +6,13 @@ def epsilon_greedy_policy(state, model, epsilon = 0):
     Simple policy which either gets the next action or random action with chance epsilon in cartpole
     '''
 
+    n_actions = len(model.outputs)
+
     if np.random.rand() < epsilon:
-        return np.random.randint(2)
+        return np.random.randint(2, size=n_actions)
     else:
         Q_values = model.predict(state[np.newaxis])
-        return np.argmax(Q_values[0])
+        return [np.argmax(Q_values_one_action[0]) for Q_values_one_action in Q_values]
 
 def random_policy(*args):
     '''

@@ -1,4 +1,5 @@
 
+import time
 from collections import deque
 
 import numpy as np
@@ -6,6 +7,8 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import InputLayer, Dense
+
+# 
 
 class DQN:
     '''
@@ -27,6 +30,7 @@ class DQN:
         self.epsilon = epsilon
         self.gamma = gamma
         self.optimizer = keras.optimizers.Adam(lr=learning_rate)
+        self.n_options = model_param_dict["n_options"]
         self.setup_model(model_fn, model_param_dict)
 
         self.epsilon_log = []
@@ -48,8 +52,13 @@ class DQN:
         Compile a simple sequential model
         '''
 
+        print("Model function: {}".format(model_fn))
+        print("Model parameter dictionary: {}".format(model_param_dict))
+
         self.model = model_fn(**model_param_dict)
-        model.summary()
+        self.model.summary()
+        print("Model inputs: {}".format(self.model.inputs))
+        print("Model outputs: {}".format(self.model.outputs))
 
     def get_epsilon(self):
         try:
@@ -73,8 +82,8 @@ class DQN:
         Log the experience from one step into the replay buffer as a dictionary
         '''
 
-        state =  np.array(state, ndmin=2)
-        next_state =  np.array(next_state, ndmin=2)
+        state =  np.array(state, dtype=np.float32)
+        next_state =  np.array(next_state, dtype=np.float32)
 
         self.replay_buffer["states"].append(state)
         self.replay_buffer["actions"].append(action)
@@ -106,8 +115,9 @@ class DQN:
             batch[key] = [self.replay_buffer[key][index] for index in inds]
 
 
-        batch["states"] = np.concatenate(batch["states"], axis=0)
-        batch["next_states"] = np.concatenate(batch["next_states"], axis=0)
+        batch["states"] = np.stack(batch["states"], axis=0)
+        batch["next_states"] = np.stack(batch["next_states"], axis=0)
+        batch["actions"] = np.stack(batch["actions"], axis=0)
 
         return batch
 
@@ -122,26 +132,43 @@ class DQN:
         Train the model with one batch by sampling from replay buffer
         Use the gradient tape method
         '''
+        start_time = time.time()
 
+
+        batch_start_time = time.time()
         # Fetch batch
         batch_inds = self.sample_experience_inds(batch_size)
         batch = self.sample_experience(batch_inds)
+        print("Batching elapsed time: {}".format(time.time()-batch_start_time))
 
-        # Create target q values, with mask to disregard irrelevant actions
-        next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
-        max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
-        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
-        mask = tf.one_hot(batch["actions"], self.action_size) # Create mask to mask actions not taken
+        learning_start_time = time.time()
 
-        # Use optimizer to apply gradient to model
-        with tf.GradientTape() as tape:
-            all_Q_values = self.get_current_Q_values(batch["states"]) # Get all possible q values from the states
-            masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
-            Q_values = tf.reduce_sum(masked_Q_values, axis=1) # Get the sum to reduce to action taken
-            loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
-            self.loss_log.append(loss) # Append to log
-            grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
-            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+        # Get number of simultaneous actions
+        n_actions = len(self.model.outputs)
+
+        next_Q_values_all_actions = 0
+        all_Q_values_all_actions = 0
+
+        for action in range(n_actions):
+
+            # Create target q values, with mask to disregard irrelevant actions
+            next_Q_values = self.get_next_Q_values(batch["next_states"])[action] # Get subsequent Q values
+            max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
+            target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
+            mask = tf.one_hot(batch["actions"][:, action], self.n_options[action]) # Create mask to mask actions not taken
+
+            # Use optimizer to apply gradient to model
+            with tf.GradientTape() as tape:
+                all_Q_values = self.get_current_Q_values(batch["states"])[action] # Get all possible q values from the states
+                masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
+                Q_values = tf.reduce_sum(masked_Q_values, axis=1) # Get the sum to reduce to action taken
+                loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
+                self.loss_log.append(loss) # Append to log
+                grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
+                self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
+
+        print("Learning elapsed time: {}".format(time.time()-learning_start_time))
+        print("Total elapsed time: {}".format(time.time()-start_time))
 
 
     def learning_step_mod(self, batch_size=100):

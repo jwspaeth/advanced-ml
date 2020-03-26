@@ -39,7 +39,7 @@ def main():
             "cnn_l2": 0,
             "dnn_hidden_sizes": [20],
             "dnn_l2": 0,
-            "output_size": action_size
+            "n_options": [3, 2, 2]
             }
     learning_rate = .001
     learning_delay = 0
@@ -48,19 +48,19 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 1
-    silent_episodes.n_steps = None
-    silent_episodes.render_flag = False
-    silent_episodes.batch_size = 2000
-    silent_episodes.verbose = True
+    silent_episodes_n_episodes = 1
+    silent_episodes_n_steps = None
+    silent_episodes_render_flag = False
+    silent_episodes_batch_size = 2000
+    silent_episodes_verbose = True
 
     # Create visible episodes configuration
     visible_episodes = CN()
-    visible_episodes.n_episodes = 5
-    visible_episodes.n_steps = None
-    visible_episodes.render_flag = True
-    visible_episodes.batch_size = 2000
-    visible_episodes.verbose = True
+    visible_episodes_n_episodes = 5
+    visible_episodes_n_steps = None
+    visible_episodes_render_flag = True
+    visible_episodes_batch_size = 2000
+    visible_episodes_verbose = True
 
     # Build agent
     agent = agent_class(
@@ -85,21 +85,21 @@ def main():
     # Run silent episodes
     agent.execute_episodes(
         env=env,
-        n_episodes=silent_episodes.n_episodes,
-        n_steps=silent_episodes.n_steps,
-        render_flag=silent_episodes.render_flag,
-        batch_size=silent_episodes.batch_size,
-        verbose=silent_episodes.verbose
+        n_episodes=silent_episodes_n_episodes,
+        n_steps=silent_episodes_n_steps,
+        render_flag=silent_episodes_render_flag,
+        batch_size=silent_episodes_batch_size,
+        verbose=silent_episodes_verbose
         )
 
     # Run visible episodes
     agent.execute_episodes(
         env=env,
-        n_episodes=visible_episodes.n_episodes,
-        n_steps=visible_episodes.n_steps,
-        render_flag=visible_episodes.render_flag,
-        batch_size=visible_episodes.batch_size,
-        verbose=visible_episodes.verbose
+        n_episodes=visible_episodes_n_episodes,
+        n_steps=visible_episodes_n_steps,
+        render_flag=visible_episodes_render_flag,
+        batch_size=visible_episodes_batch_size,
+        verbose=visible_episodes_verbose
         )
 
     # Plot results
