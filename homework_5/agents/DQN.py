@@ -34,6 +34,7 @@ class DQN:
         self.reward_log = []
         self.loss_log = []
         self.deque_log = []
+        self.collection_time = []
         self.verbose = verbose
         self.replay_buffer = {
                     "states": deque(maxlen=buffer_size),
@@ -225,6 +226,7 @@ class DQN:
             if done:
                 break
         print("\tCollection elapsed time: {}".format(time.time()-collection_time_start))
+        self.collection_time.append(time.time()-collection_time_start)
 
         # If train flag and episode above some threshold (to fill buffer), train
         if train and self.episode > self.learning_delay: 

@@ -34,7 +34,7 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 500
+    silent_episodes.n_episodes = 100
     silent_episodes.n_steps = 500
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000
