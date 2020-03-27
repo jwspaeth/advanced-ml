@@ -30,4 +30,4 @@ class TargetDQN(DQN):
             self.update_target_model()
             if "verbose" in kwargs.keys():
                 if kwargs["verbose"]:
-                    print("\tUpdate target mode")
+                    print("\tUpdate target model")

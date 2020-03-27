@@ -1,72 +1,17 @@
 #!/usr/bin/env python3
 
 import statistics
-import os
-import pickle
-import glob
-import sys
 
 import gym
 import matplotlib.pyplot as plt
 from yacs.config import CfgNode as CN
 import tensorflow.keras as keras
 
-from agents import DQN, TargetDQN
+from agents import DQN, TargetDQN, CuriosityDQN
 from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy_generator, acrobot_epsilon_decay
 
-### Hyperparameter options
-# gamma = [.99, 1]
-# n_units = [[16, 8], [32, 16], [40]]
-# learning_rate = [.01, .001]
-# target_freq = [25, 50]
-
-### Experiments: 1000 episodes; epsilon decay 300; batch size 2000; learning delay 50;
-# --Gamma--
-# 1: DQN; gamma=.99; n_units=[16, 8]; learning_rate=.01
-# 2: DQN; gamma=1; n_units=[16, 8]; learning_rate=.01
-# --> Pick best
-# --Learning rate--
-# 3: DQN; gamma=best; n_units=[16, 8]; learning_rate=.01
-# 4: DQN; gamma=best; n_units=[16, 8]; learning_rate=.001
-# --> Pick best
-# --Network--
-# 5: DQN; gamma=best; n_units=[32, 16]; learning_rate=best
-# 6: DQN; gamma=best; n_units=[40]; learning_rate=best
-# --> Pick best
-# 7: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=25
-# 8: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=50
-
-def save_results_and_models(agent, agent_folder, trial_name):
-    fbase = "{}/".format(agent_folder)
-    if not os.path.exists(fbase):
-        os.mkdir(fbase)
-
-    fbase = "{}/".format(fbase + trial_name)
-    if not os.path.exists(fbase):
-        os.mkdir(fbase)
-
-    results = {}
-    results["rewards"] = agent.reward_log
-    results["losses"] = agent.loss_log
-    print("Reward log length: {}".format(len(results["rewards"])))
-    print("Loss log length: {}".format(len(results["losses"])))
-
-    # Save full results binary
-    with open("{}results_dict.pkl".format(fbase), "wb") as f:
-        pickle.dump(results, f)
-
-    if agent.type == "DQN":
-        agent.model.save("{}model.h5".format(fbase))
-    elif agent.type == "TargetDQN":
-        agent.model.save("{}model.h5".format(fbase))
-        agent.target_model.save("{}target_model.h5".format(fbase))
 
 def main():
-
-    agent_folder = sys.argv[1]
-    trial_name = sys.argv[2]
-
-    keras.backend.clear_session()
 
     # Create environment
     env = gym.make('Acrobot-v1')
@@ -74,25 +19,26 @@ def main():
     print("Action space: {}".format(env.action_space))
 
     # Create agent configuration
-    agent_class = DQN
+    agent_class = CuriosityDQN
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
     policy = epsilon_greedy_policy_generator(-1, 2)
     loss_fn = keras.losses.mean_squared_error
-    epsilon = epsilon_episode_decay(1, .1, 200)
+    epsilon = epsilon_episode_decay(1, .01, 200)
     #epsilon = 1
     gamma = .99
     buffer_size = 10000
     n_units = [16, 8]
     learning_rate = .01
-    learning_delay = 50
+    learning_delay = 0
     learning_freq = 1
     verbose = True
-    target_update_freq = 25
+    curiosity_n_units = [4, 4]
+    curiosity_weight = 2
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 1
+    silent_episodes.n_episodes = 100
     silent_episodes.n_steps = 500
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000
@@ -102,7 +48,7 @@ def main():
     visible_episodes = CN()
     visible_episodes.n_episodes = 1
     visible_episodes.n_steps = 500
-    visible_episodes.render_flag = False
+    visible_episodes.render_flag = True
     visible_episodes.batch_size = 2000
     visible_episodes.verbose = True
 
@@ -120,7 +66,8 @@ def main():
         learning_delay=learning_delay,
         learning_freq=learning_freq,
         verbose=verbose,
-        target_update_freq=target_update_freq
+        curiosity_n_units=curiosity_n_units,
+        curiosity_weight=curiosity_weight
         )
 
     print("--Training--")
@@ -147,7 +94,40 @@ def main():
         train=False
         )
 
-    save_results_and_models(agent, agent_folder, trial_name)
+    # Plot results
+    print("--Plotting--")
+    fig, axs = plt.subplots(4, 2)
+    
+    # Take mean over last 100 episodes
+    if len(agent.reward_log) >= 100:
+        cut = 100
+    else:
+        cut = len(agent.reward_log)
+    axs[0, 0].plot(agent.reward_log, label="Agent {} -- Avg: {:.2f}".format(agent.type,
+        statistics.mean(agent.reward_log[len(agent.reward_log)-cut:])))
+    axs[0, 0].set_ylim([-550, 50])
+    axs[0, 0].legend()
+    
+    axs[0, 1].plot(agent.deque_log, label="Deque Size")
+    axs[0, 1].legend()
+
+    pad = [0] * agent.learning_delay
+    axs[1, 0].plot(pad + agent.loss_log, label="Loss")
+    axs[1, 0].legend()
+
+    axs[1, 1].plot(agent.curiosity_log, label="Curiosity")
+    axs[1, 1].legend()
+
+    axs[2, 0].plot(agent.curiosity_reward_log, label="Curiosity Reward")
+    axs[2, 0].legend()
+
+    axs[2, 1].plot(agent.raw_score_log, label="Raw Score")
+    axs[2, 1].legend()
+
+    axs[3, 0].plot(agent.q_val_log, label="Q Value")
+    axs[3, 0].legend()
+
+    plt.show()
 
 if __name__ == "__main__":
     main()

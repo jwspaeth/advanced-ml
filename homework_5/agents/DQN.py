@@ -14,7 +14,7 @@ class DQN:
     '''
 
     def __init__(self, state_size, action_size, policy, learning_delay, loss_fn, epsilon, gamma,
-        learning_rate, n_units, buffer_size, verbose=False, **kwargs):
+        learning_rate, n_units, buffer_size, learning_freq=1, verbose=False, **kwargs):
         '''
         Initialize necessary fields
         '''
@@ -24,6 +24,7 @@ class DQN:
         self.action_size = action_size
         self.policy = policy
         self.learning_delay = learning_delay
+        self.learning_freq = learning_freq
         self.loss_fn = loss_fn
         self.epsilon = epsilon
         self.gamma = gamma
@@ -118,6 +119,21 @@ class DQN:
 
         # If batch size greater than current length of buffer, give all indices for buffer.
         # Otherwise, get random sampling of batch_size indices.
+        choice_range = len(self.replay_buffer["states"])
+        if batch_size is None or batch_size > choice_range:
+            indices = np.random.choice(choice_range, size=choice_range, replace=False)
+        else:
+            indices = np.random.choice(choice_range, size=batch_size, replace=False)
+
+        return indices
+
+    def sample_experience_inds_old(self, batch_size):
+        '''
+        Sample batch_size number of experience indices from the replay buffer
+        '''
+
+        # If batch size greater than current length of buffer, give all indices for buffer.
+        # Otherwise, get random sampling of batch_size indices.
         if batch_size > len(self.replay_buffer["states"]):
             indices = list(range(len(self.replay_buffer["states"])))
         else:
@@ -173,55 +189,6 @@ class DQN:
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 
-    def learning_epoch(self, batch_size=100):
-        '''
-        Train the model with one batch by sampling from replay buffer
-        Use the gradient tape method
-        '''
-
-        batch_time_start = time.time()
-        # Fetch batch
-        batch_inds = self.sample_experience_inds(batch_size)
-        batch = self.sample_experience(batch_inds)
-
-        # Create target q values, with mask to disregard irrelevant actions
-        next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
-        max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
-        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
-        mask = tf.one_hot(batch["actions"], self.action_size) # Create mask to mask actions not taken
-
-        # Use optimizer to apply gradient to model
-        with tf.GradientTape() as tape:
-            all_Q_values = self.get_current_Q_values(batch["states"]) # Get all possible q values from the states
-            masked_Q_values = all_Q_values * mask # Mask the actions which were not taken
-            Q_values = tf.reduce_sum(masked_Q_values, axis=1) # Get the sum to reduce to action taken
-            loss = tf.reduce_mean(self.loss_fn(target_Q_values, Q_values)) # Compute the losses
-            self.loss_log.append(loss) # Append to log
-            grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
-            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
-
-
-    def learning_step_mod(self, batch_size=100):
-        '''
-        Train the model with one batch by sampling from replay buffer
-        Use the model.fit method
-        '''
-
-        # Fetch batch
-        batch_inds = self.sample_experience_inds(batch_size)
-        batch = self.sample_experience(batch_inds)
-
-        # Get action mask
-        mask = tf.one_hot(batch["actions"], self.action_size)
-
-        # Get current q values
-        current_Q_values = self.get_current_Q_values(batch["states"])
-
-        # Create target q values, with mask to disregard irrelevant actions
-        next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
-        max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
-        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
-
     def execute_episode(self, env, n_steps=None, render_flag=False, batch_size=100, verbose=False,
         train=True):
         '''
@@ -245,8 +212,11 @@ class DQN:
                 break
 
         # If train flag and episode above some threshold (to fill buffer), train
-        if train and self.episode > self.learning_delay: 
+        if train and self.episode >= self.learning_delay and self.episode % self.learning_freq == 0:
+            print("\tLearning")
             self.learning_step(batch_size=batch_size)
+        else:
+            print("\tCollecting")
 
         self.reward_log.append(reward_total)
         self.epsilon_log.append(self.get_epsilon())

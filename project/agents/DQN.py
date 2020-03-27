@@ -98,10 +98,11 @@ class DQN:
 
         # If batch size greater than current length of buffer, give all indices for buffer.
         # Otherwise, get random sampling of batch_size indices.
-        if batch_size > len(self.replay_buffer["states"]):
-            indices = list(range(len(self.replay_buffer["states"])))
+        choice_range = len(self.replay_buffer["states"])
+        if batch_size is None or batch_size > choice_range:
+            indices = np.random.choice(choice_range, size=choice_range, replace=False)
         else:
-            indices = np.random.randint(len(self.replay_buffer["states"]), size=batch_size)
+            indices = np.random.choice(choice_range, size=batch_size, replace=False)
 
         return indices
 
