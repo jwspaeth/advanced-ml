@@ -24,17 +24,20 @@ from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
 # --Gamma--
 # 1: DQN; gamma=.99; n_units=[16, 8]; learning_rate=.01
 # 2: DQN; gamma=1; n_units=[16, 8]; learning_rate=.01
+# 3: DQN; gamma=.98; n_units=[16, 8]; learning_rate=.01
+# 4: DQN; gamma=.97; n_units=[16, 8]; learning_rate=.01
+# 5: DQN; gamma=.96; n_units=[16, 8]; learning_rate=.01
 # --> Pick best
 # --Learning rate--
-# 3: DQN; gamma=best; n_units=[16, 8]; learning_rate=.01
-# 4: DQN; gamma=best; n_units=[16, 8]; learning_rate=.001
+# 6: DQN; gamma=best; n_units=[16, 8]; learning_rate=.01
+# 7: DQN; gamma=best; n_units=[16, 8]; learning_rate=.001
 # --> Pick best
 # --Network--
-# 5: DQN; gamma=best; n_units=[32, 16]; learning_rate=best
-# 6: DQN; gamma=best; n_units=[40]; learning_rate=best
+# 8: DQN; gamma=best; n_units=[32, 16]; learning_rate=best
+# 9: DQN; gamma=best; n_units=[40]; learning_rate=best
 # --> Pick best
-# 7: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=25
-# 8: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=50
+# 10: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=25
+# 11: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=50
 
 def save_results_and_models(agent, agent_folder, trial_name):
     fbase = "{}/".format(agent_folder)
