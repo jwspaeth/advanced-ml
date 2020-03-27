@@ -79,8 +79,7 @@ def main():
     action_size = env.action_space.n
     policy = epsilon_greedy_policy_generator(-1, 2)
     loss_fn = keras.losses.mean_squared_error
-    epsilon = epsilon_episode_decay(1, .1, 200)
-    #epsilon = 1
+    epsilon = epsilon_episode_decay(1, .1, 300)
     gamma = .99
     buffer_size = 10000
     n_units = [16, 8]
@@ -92,7 +91,7 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes.n_episodes = 1
+    silent_episodes.n_episodes = 1000
     silent_episodes.n_steps = 500
     silent_episodes.render_flag = False
     silent_episodes.batch_size = 2000
