@@ -26,18 +26,39 @@ from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
 # 2: DQN; gamma=1; n_units=[16, 8]; learning_rate=.01
 # 3: DQN; gamma=.98; n_units=[16, 8]; learning_rate=.01
 # 4: DQN; gamma=.97; n_units=[16, 8]; learning_rate=.01
-# 5: DQN; gamma=.96; n_units=[16, 8]; learning_rate=.01
+# 5: DQN; gamma=.96; n_units=[16, 8]; learning_rate=.01 <--
+# 6: DQN; gamma=.95; n_units=[16, 8]; learning_rate=.01
+# 7: DQN; gamma=.94; n_units=[16, 8]; learning_rate=.01
+# 8: DQN; gamma=.93; n_units=[16, 8]; learning_rate=.01
 # --> Pick best
 # --Learning rate--
-# 6: DQN; gamma=best; n_units=[16, 8]; learning_rate=.01
-# 7: DQN; gamma=best; n_units=[16, 8]; learning_rate=.001
+# 9: DQN; gamma=.96; n_units=[16, 8]; learning_rate=.001 <--
 # --> Pick best
 # --Network--
-# 8: DQN; gamma=best; n_units=[32, 16]; learning_rate=best
-# 9: DQN; gamma=best; n_units=[40]; learning_rate=best
+# 10: DQN; gamma=.96; n_units=[32, 16]; learning_rate=.001
+# 11: DQN; gamma=.96; n_units=[40]; learning_rate=.001 <--
 # --> Pick best
-# 10: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=25
-# 11: TargetDQN; gamma=best; n_units=best; learning_rate=best; target_freq=50
+# Target update frequency
+# 12: TargetDQN; gamma=.96; n_units=[40]; learning_rate=.001; target_freq=25 <--
+# 13: TargetDQN; gamma=.96; n_units=[40]; learning_rate=.001; target_freq=50
+# --> Pick best
+# Batch size :::: TRASHED BC TARGET FREQ 50
+# 14: TargetDQN; gamma=.96; n_units=[40]; learning_rate=.001; target_freq=25; batch size 64
+# 15: TargetDQN; gamma=.96; n_units=[30]; learning_rate=.001; target_freq=25
+# 16: TargetDQN; gamma=.96; n_units=[20]; learning_rate=.001; target_freq=25
+# 17: TargetDQN; gamma=.96; n_units=[60]; learning_rate=.001; target_freq=25
+# 18: Experiment 12 for 3000 episodes
+# 19: TargetDQN; gamma=.99; n_units=[40]; learning_rate=.001; target_freq=25 <--
+# 20: Experiment 19 for 3000 episodes
+# 21: TargetDQN; gamma=1; n_units=[40]; learning_rate=.001; target_freq=25
+# 22: TargetDQN; gamma=.99; n_units=[40]; learning_rate=.001; target_freq=25; Epsilon decay to .01 <--
+# 23: TargetDQN; gamma=1; n_units=[40]; learning_rate=.001; target_freq=25; Epsilon decay to .01
+# 24: TargetDQN; gamma=1; n_units=[40]; learning_rate=.001; target_freq=50; Epsilon decay to .01
+# 25: TargetDQN; gamma=.99; n_units=[40]; learning_rate=.001; target_freq=50; Epsilon decay to .01
+# 26: Experiment 22 with L2 .1
+# 27: Experiment 22 with L2 .01
+# 28: Experiment 22 with L2 .001
+# 29: Experiment 22 with L2 .0001
 
 def save_results_and_models(agent, agent_folder, trial_name):
     fbase = "{}/".format(agent_folder)
