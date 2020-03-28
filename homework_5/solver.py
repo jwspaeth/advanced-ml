@@ -107,6 +107,7 @@ def main():
     gamma = .99
     buffer_size = 10000
     n_units = [16, 8]
+    l2 = 0
     learning_rate = .01
     learning_delay = 50
     learning_freq = 1
@@ -139,6 +140,7 @@ def main():
         gamma=gamma,
         buffer_size=buffer_size,
         n_units=n_units,
+        l2=l2,
         learning_rate=learning_rate,
         learning_delay=learning_delay,
         learning_freq=learning_freq,
