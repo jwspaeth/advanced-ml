@@ -1,0 +1,971 @@
+%!PS-Adobe-3.0
+%%BoundingBox: 24 24 571 818
+%%Title: Enscript Output
+%%For: John Spaeth
+%%Creator: GNU Enscript 1.6.6
+%%CreationDate: Sat Mar 28 15:07:34 2020
+%%Orientation: Portrait
+%%Pages: (atend)
+%%DocumentMedia: A4 595 842 0 () ()
+%%DocumentNeededResources: (atend)
+%%EndComments
+%%BeginProlog
+%%BeginResource: procset Enscript-Prolog 1.6 6
+%
+% Procedures.
+%
+
+/_S {	% save current state
+  /_s save def
+} def
+/_R {	% restore from saved state
+  _s restore
+} def
+
+/S {	% showpage protecting gstate
+  gsave
+  showpage
+  grestore
+} bind def
+
+/MF {	% fontname newfontname -> -	make a new encoded font
+  /newfontname exch def
+  /fontname exch def
+
+  /fontdict fontname findfont def
+  /newfont fontdict maxlength dict def
+
+  fontdict {
+    exch
+    dup /FID eq {
+      % skip FID pair
+      pop pop
+    } {
+      % copy to the new font dictionary
+      exch newfont 3 1 roll put
+    } ifelse
+  } forall
+
+  newfont /FontName newfontname put
+
+  % insert only valid encoding vectors
+  encoding_vector length 256 eq {
+    newfont /Encoding encoding_vector put
+  } if
+
+  newfontname newfont definefont pop
+} def
+
+/MF_PS { % fontname newfontname -> -	make a new font preserving its enc
+  /newfontname exch def
+  /fontname exch def
+
+  /fontdict fontname findfont def
+  /newfont fontdict maxlength dict def
+
+  fontdict {
+    exch
+    dup /FID eq {
+      % skip FID pair
+      pop pop
+    } {
+      % copy to the new font dictionary
+      exch newfont 3 1 roll put
+    } ifelse
+  } forall
+
+  newfont /FontName newfontname put
+
+  newfontname newfont definefont pop
+} def
+
+/SF { % fontname width height -> -	set a new font
+  /height exch def
+  /width exch def
+
+  findfont
+  [width 0 0 height 0 0] makefont setfont
+} def
+
+/SUF { % fontname width height -> -	set a new user font
+  /height exch def
+  /width exch def
+
+  /F-gs-user-font MF
+  /F-gs-user-font width height SF
+} def
+
+/SUF_PS { % fontname width height -> -	set a new user font preserving its enc
+  /height exch def
+  /width exch def
+
+  /F-gs-user-font MF_PS
+  /F-gs-user-font width height SF
+} def
+
+/M {moveto} bind def
+/s {show} bind def
+
+/Box {	% x y w h -> -			define box path
+  /d_h exch def /d_w exch def /d_y exch def /d_x exch def
+  d_x d_y  moveto
+  d_w 0 rlineto
+  0 d_h rlineto
+  d_w neg 0 rlineto
+  closepath
+} def
+
+/bgs {	% x y height blskip gray str -> -	show string with bg color
+  /str exch def
+  /gray exch def
+  /blskip exch def
+  /height exch def
+  /y exch def
+  /x exch def
+
+  gsave
+    x y blskip sub str stringwidth pop height Box
+    gray setgray
+    fill
+  grestore
+  x y M str s
+} def
+
+/bgcs { % x y height blskip red green blue str -> -  show string with bg color
+  /str exch def
+  /blue exch def
+  /green exch def
+  /red exch def
+  /blskip exch def
+  /height exch def
+  /y exch def
+  /x exch def
+
+  gsave
+    x y blskip sub str stringwidth pop height Box
+    red green blue setrgbcolor
+    fill
+  grestore
+  x y M str s
+} def
+
+% Highlight bars.
+/highlight_bars {	% nlines lineheight output_y_margin gray -> -
+  gsave
+    setgray
+    /ymarg exch def
+    /lineheight exch def
+    /nlines exch def
+
+    % This 2 is just a magic number to sync highlight lines to text.
+    0 d_header_y ymarg sub 2 sub translate
+
+    /cw d_output_w cols div def
+    /nrows d_output_h ymarg 2 mul sub lineheight div cvi def
+
+    % for each column
+    0 1 cols 1 sub {
+      cw mul /xp exch def
+
+      % for each rows
+      0 1 nrows 1 sub {
+        /rn exch def
+        rn lineheight mul neg /yp exch def
+        rn nlines idiv 2 mod 0 eq {
+	  % Draw highlight bar.  4 is just a magic indentation.
+	  xp 4 add yp cw 8 sub lineheight neg Box fill
+	} if
+      } for
+    } for
+
+  grestore
+} def
+
+% Line highlight bar.
+/line_highlight {	% x y width height gray -> -
+  gsave
+    /gray exch def
+    Box gray setgray fill
+  grestore
+} def
+
+% Column separator lines.
+/column_lines {
+  gsave
+    .1 setlinewidth
+    0 d_footer_h translate
+    /cw d_output_w cols div def
+    1 1 cols 1 sub {
+      cw mul 0 moveto
+      0 d_output_h rlineto stroke
+    } for
+  grestore
+} def
+
+% Column borders.
+/column_borders {
+  gsave
+    .1 setlinewidth
+    0 d_footer_h moveto
+    0 d_output_h rlineto
+    d_output_w 0 rlineto
+    0 d_output_h neg rlineto
+    closepath stroke
+  grestore
+} def
+
+% Do the actual underlay drawing
+/draw_underlay {
+  ul_style 0 eq {
+    ul_str true charpath stroke
+  } {
+    ul_str show
+  } ifelse
+} def
+
+% Underlay
+/underlay {	% - -> -
+  gsave
+    0 d_page_h translate
+    d_page_h neg d_page_w atan rotate
+
+    ul_gray setgray
+    ul_font setfont
+    /dw d_page_h dup mul d_page_w dup mul add sqrt def
+    ul_str stringwidth pop dw exch sub 2 div ul_h_ptsize -2 div moveto
+    draw_underlay
+  grestore
+} def
+
+/user_underlay {	% - -> -
+  gsave
+    ul_x ul_y translate
+    ul_angle rotate
+    ul_gray setgray
+    ul_font setfont
+    0 0 ul_h_ptsize 2 div sub moveto
+    draw_underlay
+  grestore
+} def
+
+% Page prefeed
+/page_prefeed {		% bool -> -
+  statusdict /prefeed known {
+    statusdict exch /prefeed exch put
+  } {
+    pop
+  } ifelse
+} def
+
+% Wrapped line markers
+/wrapped_line_mark {	% x y charwith charheight type -> -
+  /type exch def
+  /h exch def
+  /w exch def
+  /y exch def
+  /x exch def
+
+  type 2 eq {
+    % Black boxes (like TeX does)
+    gsave
+      0 setlinewidth
+      x w 4 div add y M
+      0 h rlineto w 2 div 0 rlineto 0 h neg rlineto
+      closepath fill
+    grestore
+  } {
+    type 3 eq {
+      % Small arrows
+      gsave
+        .2 setlinewidth
+        x w 2 div add y h 2 div add M
+        w 4 div 0 rlineto
+        x w 4 div add y lineto stroke
+
+        x w 4 div add w 8 div add y h 4 div add M
+        x w 4 div add y lineto
+	w 4 div h 8 div rlineto stroke
+      grestore
+    } {
+      % do nothing
+    } ifelse
+  } ifelse
+} def
+
+% EPSF import.
+
+/BeginEPSF {
+  /b4_Inc_state save def    		% Save state for cleanup
+  /dict_count countdictstack def	% Count objects on dict stack
+  /op_count count 1 sub def		% Count objects on operand stack
+  userdict begin
+  /showpage { } def
+  0 setgray 0 setlinecap
+  1 setlinewidth 0 setlinejoin
+  10 setmiterlimit [ ] 0 setdash newpath
+  /languagelevel where {
+    pop languagelevel
+    1 ne {
+      false setstrokeadjust false setoverprint
+    } if
+  } if
+} bind def
+
+/EndEPSF {
+  count op_count sub { pos } repeat	% Clean up stacks
+  countdictstack dict_count sub { end } repeat
+  b4_Inc_state restore
+} bind def
+
+% Check PostScript language level.
+/languagelevel where {
+  pop /gs_languagelevel languagelevel def
+} {
+  /gs_languagelevel 1 def
+} ifelse
+%%EndResource
+%%BeginResource: procset Enscript-Encoding-88591 1.6 6
+/encoding_vector [
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/space        	/exclam       	/quotedbl     	/numbersign   	
+/dollar       	/percent      	/ampersand    	/quoteright   	
+/parenleft    	/parenright   	/asterisk     	/plus         	
+/comma        	/hyphen       	/period       	/slash        	
+/zero         	/one          	/two          	/three        	
+/four         	/five         	/six          	/seven        	
+/eight        	/nine         	/colon        	/semicolon    	
+/less         	/equal        	/greater      	/question     	
+/at           	/A            	/B            	/C            	
+/D            	/E            	/F            	/G            	
+/H            	/I            	/J            	/K            	
+/L            	/M            	/N            	/O            	
+/P            	/Q            	/R            	/S            	
+/T            	/U            	/V            	/W            	
+/X            	/Y            	/Z            	/bracketleft  	
+/backslash    	/bracketright 	/asciicircum  	/underscore   	
+/quoteleft    	/a            	/b            	/c            	
+/d            	/e            	/f            	/g            	
+/h            	/i            	/j            	/k            	
+/l            	/m            	/n            	/o            	
+/p            	/q            	/r            	/s            	
+/t            	/u            	/v            	/w            	
+/x            	/y            	/z            	/braceleft    	
+/bar          	/braceright   	/tilde        	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/.notdef      	/.notdef      	/.notdef      	/.notdef      	
+/space        	/exclamdown   	/cent         	/sterling     	
+/currency     	/yen          	/brokenbar    	/section      	
+/dieresis     	/copyright    	/ordfeminine  	/guillemotleft	
+/logicalnot   	/hyphen       	/registered   	/macron       	
+/degree       	/plusminus    	/twosuperior  	/threesuperior	
+/acute        	/mu           	/paragraph    	/bullet       	
+/cedilla      	/onesuperior  	/ordmasculine 	/guillemotright	
+/onequarter   	/onehalf      	/threequarters	/questiondown 	
+/Agrave       	/Aacute       	/Acircumflex  	/Atilde       	
+/Adieresis    	/Aring        	/AE           	/Ccedilla     	
+/Egrave       	/Eacute       	/Ecircumflex  	/Edieresis    	
+/Igrave       	/Iacute       	/Icircumflex  	/Idieresis    	
+/Eth          	/Ntilde       	/Ograve       	/Oacute       	
+/Ocircumflex  	/Otilde       	/Odieresis    	/multiply     	
+/Oslash       	/Ugrave       	/Uacute       	/Ucircumflex  	
+/Udieresis    	/Yacute       	/Thorn        	/germandbls   	
+/agrave       	/aacute       	/acircumflex  	/atilde       	
+/adieresis    	/aring        	/ae           	/ccedilla     	
+/egrave       	/eacute       	/ecircumflex  	/edieresis    	
+/igrave       	/iacute       	/icircumflex  	/idieresis    	
+/eth          	/ntilde       	/ograve       	/oacute       	
+/ocircumflex  	/otilde       	/odieresis    	/divide       	
+/oslash       	/ugrave       	/uacute       	/ucircumflex  	
+/udieresis    	/yacute       	/thorn        	/ydieresis    	
+] def
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%IncludeResource: font Courier-Bold
+%%IncludeResource: font Courier
+/HFpt_w 10 def
+/HFpt_h 10 def
+/Courier-Bold /HF-gs-font MF
+/HF /HF-gs-font findfont [HFpt_w 0 0 HFpt_h 0 0] makefont def
+/Courier /F-gs-font MF
+/F-gs-font 10 10 SF
+/#copies 1 def
+% Pagedevice definitions:
+gs_languagelevel 1 gt {
+  <<
+    /PageSize [595 842] 
+  >> setpagedevice
+} if
+%%BeginResource: procset Enscript-Header-simple 1.6 6
+
+/do_header {	% print default simple header
+  gsave
+    d_header_x d_header_y HFpt_h 3 div add translate
+
+    HF setfont
+    user_header_p {
+      5 0 moveto user_header_left_str show
+
+      d_header_w user_header_center_str stringwidth pop sub 2 div
+      0 moveto user_header_center_str show
+
+      d_header_w user_header_right_str stringwidth pop sub 5 sub
+      0 moveto user_header_right_str show
+    } {
+      5 0 moveto fname show
+      45 0 rmoveto fmodstr show
+      45 0 rmoveto pagenumstr show
+    } ifelse
+
+  grestore
+} def
+%%EndResource
+/d_page_w 547 def
+/d_page_h 794 def
+/d_header_x 0 def
+/d_header_y 779 def
+/d_header_w 547 def
+/d_header_h 15 def
+/d_footer_x 0 def
+/d_footer_y 0 def
+/d_footer_w 547 def
+/d_footer_h 0 def
+/d_output_w 547 def
+/d_output_h 779 def
+/cols 1 def
+%%EndSetup
+%%Page: (1) 1
+%%BeginPageSetup
+_S
+24 24 translate
+/pagenum 1 def
+/fname (py_files/DQN.py) def
+/fdir (py_files) def
+/ftail (DQN.py) def
+% User defined strings:
+/fmodstr (Sat Mar 28 15:05:33 2020) def
+/pagenumstr (1) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+do_header
+5 755 M
+(import time) s
+5 744 M
+(from collections import deque) s
+5 722 M
+(import numpy as np) s
+5 711 M
+(import tensorflow as tf) s
+5 700 M
+(import tensorflow.keras as keras) s
+5 689 M
+(from tensorflow.keras.models import Sequential) s
+5 678 M
+(from tensorflow.keras.layers import InputLayer, Dense) s
+5 656 M
+(class DQN:) s
+5 645 M
+(    ''') s
+5 634 M
+(    Baseline Deep Q-Network with experience replay) s
+5 623 M
+(    ''') s
+5 601 M
+(    def __init__\(self, state_size, action_size, policy, learning_delay, loss_fn, epsilon,) s
+5 590 M
+( gamma,) s
+5 579 M
+(        learning_rate, n_units, buffer_size, l2=0, learning_freq=1, verbose=False, **kwar) s
+5 568 M
+(gs\):) s
+5 557 M
+(        ''') s
+5 546 M
+(        Initialize necessary fields) s
+5 535 M
+(        ''') s
+5 524 M
+(        self.type = "DQN") s
+5 502 M
+(        self.state_size = state_size) s
+5 491 M
+(        self.action_size = action_size) s
+5 480 M
+(        self.policy = policy) s
+5 469 M
+(        self.learning_delay = learning_delay) s
+5 458 M
+(        self.learning_freq = learning_freq) s
+5 447 M
+(        self.loss_fn = loss_fn) s
+5 436 M
+(        self.epsilon = epsilon) s
+5 425 M
+(        self.gamma = gamma) s
+5 414 M
+(        self.optimizer = keras.optimizers.Adam\(lr=learning_rate\)) s
+5 403 M
+(        self.setup_model\(n_units, l2=l2\)) s
+5 381 M
+(        self.epsilon_log = []) s
+5 370 M
+(        self.reward_log = []) s
+5 359 M
+(        self.loss_log = []) s
+5 348 M
+(        self.deque_log = []) s
+5 337 M
+(        self.verbose = verbose) s
+5 326 M
+(        self.replay_buffer = {) s
+5 315 M
+(                    "states": deque\(maxlen=buffer_size\),) s
+5 304 M
+(                    "actions": deque\(maxlen=buffer_size\),) s
+5 293 M
+(                    "rewards": deque\(maxlen=buffer_size\),) s
+5 282 M
+(                    "next_states": deque\(maxlen=buffer_size\),) s
+5 271 M
+(                    "dones": deque\(maxlen=buffer_size\)) s
+5 260 M
+(        }) s
+5 249 M
+(        self.episode = 0) s
+5 227 M
+(    def build_model\(self, n_units, activation="elu", l2=0\):) s
+5 216 M
+(        ''') s
+5 205 M
+(        Build a simple sequential model.) s
+5 194 M
+(        ''') s
+5 183 M
+(        print\("L2: {}".format\(l2\)\)) s
+5 161 M
+(        model = Sequential\(\)) s
+5 150 M
+(        i = 0) s
+5 139 M
+(        ) s
+5 128 M
+(        # Input layer) s
+5 117 M
+(        model.add\(InputLayer\(input_shape=\(self.state_size,\)\)\)) s
+5 106 M
+(        ) s
+5 95 M
+(        # Loop over hidden layers) s
+5 84 M
+(        for n in n_units:) s
+5 73 M
+(            model.add\(Dense\(n, ) s
+5 62 M
+(                        activation=activation,) s
+5 51 M
+(                        kernel_regularizer=keras.regularizers.l2\(l2\),) s
+5 40 M
+(                        name = "D"+str\(i\)\)\)) s
+5 29 M
+(            i=i+1) s
+5 18 M
+(            ) s
+5 7 M
+(        # model.add\(BatchNormalization\(\)\)) s
+_R
+S
+%%Page: (2) 2
+%%BeginPageSetup
+_S
+24 24 translate
+/pagenum 2 def
+/fname (py_files/DQN.py) def
+/fdir (py_files) def
+/ftail (DQN.py) def
+% User defined strings:
+/fmodstr (Sat Mar 28 15:05:33 2020) def
+/pagenumstr (2) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+do_header
+5 766 M
+(        # Output layer) s
+5 755 M
+(        model.add\(Dense\(self.action_size, ) s
+5 744 M
+(                        activation=None,) s
+5 733 M
+(                        name = "D"+str\(i\)\)\)) s
+5 722 M
+(        ) s
+5 711 M
+(        return model) s
+5 689 M
+(    def setup_model\(self, n_units, l2=0\):) s
+5 678 M
+(        ''') s
+5 667 M
+(        Compile a simple sequential model) s
+5 656 M
+(        ''') s
+5 634 M
+(        model = self.build_model\(n_units=n_units, l2=l2\)) s
+5 623 M
+(        self.model = model) s
+5 612 M
+(        model.summary\(\)) s
+5 590 M
+(    def get_epsilon\(self\):) s
+5 579 M
+(        try:) s
+5 568 M
+(            return self.epsilon\(self.episode\)) s
+5 557 M
+(        except TypeError as e:) s
+5 546 M
+(            return self.epsilon) s
+5 524 M
+(    def play_one_step\(self, env, state\):) s
+5 513 M
+(        ''') s
+5 502 M
+(        Take one step in the environment based on the agent parameters) s
+5 491 M
+(        ''') s
+5 469 M
+(        action = self.policy\(state, self.model, self.get_epsilon\(\)\) # Query policy) s
+5 447 M
+(        next_state, reward, done, info = env.step\(action\) # Query environment) s
+5 436 M
+(        self.memorize\(state, action, reward, next_state, done\) # Log) s
+5 414 M
+(        return next_state, reward, done, info) s
+5 392 M
+(    def memorize\(self, state, action, reward, next_state, done\):) s
+5 381 M
+(        ''') s
+5 370 M
+(        Log the experience from one step into the replay buffer as a dictionary) s
+5 359 M
+(        ''') s
+5 337 M
+(        state =  np.array\(state, ndmin=2\)) s
+5 326 M
+(        next_state =  np.array\(next_state, ndmin=2\)) s
+5 304 M
+(        self.replay_buffer["states"].append\(state\)) s
+5 293 M
+(        self.replay_buffer["actions"].append\(action\)) s
+5 282 M
+(        self.replay_buffer["rewards"].append\(reward\)) s
+5 271 M
+(        self.replay_buffer["next_states"].append\(next_state\)) s
+5 260 M
+(        self.replay_buffer["dones"].append\(done\)) s
+5 238 M
+(    def sample_experience_inds\(self, batch_size\):) s
+5 227 M
+(        ''') s
+5 216 M
+(        Sample batch_size number of experience indices from the replay buffer) s
+5 205 M
+(        ''') s
+5 183 M
+(        # If batch size greater than current length of buffer, give all indices for buffe) s
+5 172 M
+(r.) s
+5 161 M
+(        # Otherwise, get random sampling of batch_size indices.) s
+5 150 M
+(        choice_range = len\(self.replay_buffer["states"]\)) s
+5 139 M
+(        if batch_size is None or batch_size > choice_range:) s
+5 128 M
+(            indices = np.random.choice\(choice_range, size=choice_range, replace=False\)) s
+5 117 M
+(        else:) s
+5 106 M
+(            indices = np.random.choice\(choice_range, size=batch_size, replace=False\)) s
+5 84 M
+(        return indices) s
+5 62 M
+(    def sample_experience_inds_old\(self, batch_size\):) s
+5 51 M
+(        ''') s
+5 40 M
+(        Sample batch_size number of experience indices from the replay buffer) s
+5 29 M
+(        ''') s
+5 7 M
+(        # If batch size greater than current length of buffer, give all indices for buffe) s
+_R
+S
+%%Page: (3) 3
+%%BeginPageSetup
+_S
+24 24 translate
+/pagenum 3 def
+/fname (py_files/DQN.py) def
+/fdir (py_files) def
+/ftail (DQN.py) def
+% User defined strings:
+/fmodstr (Sat Mar 28 15:05:33 2020) def
+/pagenumstr (3) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+do_header
+5 766 M
+(r.) s
+5 755 M
+(        # Otherwise, get random sampling of batch_size indices.) s
+5 744 M
+(        if batch_size > len\(self.replay_buffer["states"]\):) s
+5 733 M
+(            indices = list\(range\(len\(self.replay_buffer["states"]\)\)\)) s
+5 722 M
+(        else:) s
+5 711 M
+(            indices = np.random.randint\(len\(self.replay_buffer["states"]\), size=batch_siz) s
+5 700 M
+(e\)) s
+5 678 M
+(        return indices) s
+5 656 M
+(    def sample_experience\(self, inds\):) s
+5 645 M
+(        ''') s
+5 634 M
+(        Sample experiences with indices from replay buffer) s
+5 623 M
+(        ''') s
+5 601 M
+(        batch = {}) s
+5 590 M
+(        for key in self.replay_buffer.keys\(\):) s
+5 579 M
+(            batch[key] = [self.replay_buffer[key][index] for index in inds]) s
+5 546 M
+(        batch["states"] = np.concatenate\(batch["states"], axis=0\)) s
+5 535 M
+(        batch["next_states"] = np.concatenate\(batch["next_states"], axis=0\)) s
+5 513 M
+(        return batch) s
+5 491 M
+(    def get_current_Q_values\(self, states\):) s
+5 480 M
+(        return self.model\(states\)) s
+5 458 M
+(    def get_next_Q_values\(self, next_states\):) s
+5 447 M
+(        return self.model.predict\(next_states\)) s
+5 425 M
+(    def learning_step\(self, batch_size=100\):) s
+5 414 M
+(        ''') s
+5 403 M
+(        Train the model with one batch by sampling from replay buffer) s
+5 392 M
+(        Use the gradient tape method) s
+5 381 M
+(        ''') s
+5 359 M
+(        batch_time_start = time.time\(\)) s
+5 348 M
+(        # Fetch batch) s
+5 337 M
+(        batch_inds = self.sample_experience_inds\(batch_size\)) s
+5 326 M
+(        batch = self.sample_experience\(batch_inds\)) s
+5 304 M
+(        # Create target q values, with mask to disregard irrelevant actions) s
+5 293 M
+(        next_Q_values = self.get_next_Q_values\(batch["next_states"]\) # Get subsequent Q v) s
+5 282 M
+(alues) s
+5 271 M
+(        max_next_Q_values = np.max\(next_Q_values, axis=1\) # Get max of subsequent Q value) s
+5 260 M
+(s) s
+5 249 M
+(        target_Q_values = \(batch["rewards"] + \(1 - np.asarray\(batch["dones"]\)\) * self.gam) s
+5 238 M
+(ma * max_next_Q_values\) # Define Q targets) s
+5 227 M
+(        mask = tf.one_hot\(batch["actions"], self.action_size\) # Create mask to mask actio) s
+5 216 M
+(ns not taken) s
+5 194 M
+(        # Use optimizer to apply gradient to model) s
+5 183 M
+(        with tf.GradientTape\(\) as tape:) s
+5 172 M
+(            all_Q_values = self.get_current_Q_values\(batch["states"]\) # Get all possible ) s
+5 161 M
+(q values from the states) s
+5 150 M
+(            masked_Q_values = all_Q_values * mask # Mask the actions which were not taken) s
+5 139 M
+(            Q_values = tf.reduce_sum\(masked_Q_values, axis=1\) # Get the sum to reduce to ) s
+5 128 M
+(action taken) s
+5 117 M
+(            loss = tf.reduce_mean\(self.loss_fn\(target_Q_values, Q_values\)\) # Compute the ) s
+5 106 M
+(losses) s
+5 95 M
+(            self.loss_log.append\(loss\) # Append to log) s
+5 84 M
+(            grads = tape.gradient\(loss, self.model.trainable_variables\) # Compute the gra) s
+5 73 M
+(dients) s
+5 62 M
+(            self.optimizer.apply_gradients\(zip\(grads, self.model.trainable_variables\)\) # ) s
+5 51 M
+(Apply the gradients to the model) s
+5 29 M
+(    def execute_episode\(self, env, n_steps=None, render_flag=False, batch_size=100, verbo) s
+5 18 M
+(se=False,) s
+5 7 M
+(        train=True\):) s
+_R
+S
+%%Page: (4) 4
+%%BeginPageSetup
+_S
+24 24 translate
+/pagenum 4 def
+/fname (py_files/DQN.py) def
+/fdir (py_files) def
+/ftail (DQN.py) def
+% User defined strings:
+/fmodstr (Sat Mar 28 15:05:33 2020) def
+/pagenumstr (4) def
+/user_header_p false def
+/user_footer_p false def
+%%EndPageSetup
+do_header
+5 766 M
+(        ''') s
+5 755 M
+(        Execute one episode, which terminates when done if flagged or step limit is reach) s
+5 744 M
+(ed) s
+5 733 M
+(        ''') s
+5 711 M
+(        # Initialize vars) s
+5 700 M
+(        reward_total = 0) s
+5 689 M
+(        step = 0) s
+5 678 M
+(        done = False) s
+5 667 M
+(        state = env.reset\(\)) s
+5 656 M
+(        while \(n_steps is None or step < n_steps\) and not done: # Continue till step coun) s
+5 645 M
+(t, or until done) s
+5 623 M
+(            if render_flag: # Create visualization for environment) s
+5 612 M
+(                env.render\(\)) s
+5 590 M
+(            state, reward, done, info = self.play_one_step\(env, state\) # Custom step func) s
+5 579 M
+(tion) s
+5 568 M
+(            reward_total += reward) s
+5 557 M
+(            step += 1) s
+5 546 M
+(            if done:) s
+5 535 M
+(                break) s
+5 513 M
+(        # If train flag and episode above some threshold \(to fill buffer\), train) s
+5 502 M
+(        if train and self.episode >= self.learning_delay and self.episode % self.learning) s
+5 491 M
+(_freq == 0:) s
+5 480 M
+(            print\("\\tLearning"\)) s
+5 469 M
+(            self.learning_step\(batch_size=batch_size\)) s
+5 458 M
+(        else:) s
+5 447 M
+(            print\("\\tCollecting"\)) s
+5 425 M
+(        self.reward_log.append\(reward_total\)) s
+5 414 M
+(        self.epsilon_log.append\(self.get_epsilon\(\)\)) s
+5 403 M
+(        self.deque_log.append\(len\(self.replay_buffer["states"]\)\)) s
+5 392 M
+(        self.episode += 1) s
+5 370 M
+(        if verbose:) s
+5 359 M
+(            print\("\\tReward: {}".format\(reward_total\)\)) s
+5 337 M
+(    def execute_episodes\(self, env, n_episodes, n_steps, render_flag=False, batch_size=10) s
+5 326 M
+(0, verbose=False,) s
+5 315 M
+(        train=True\):) s
+5 304 M
+(        ''') s
+5 293 M
+(        Execute multiple episodes) s
+5 282 M
+(        ''') s
+5 271 M
+(        ) s
+5 260 M
+(        for episode in range\(n_episodes\):) s
+5 249 M
+(            if verbose:) s
+5 238 M
+(                print\("Episode: {}".format\(self.episode\)\)) s
+5 216 M
+(            self.execute_episode\() s
+5 205 M
+(                env=env,) s
+5 194 M
+(                n_steps=n_steps,) s
+5 183 M
+(                render_flag=render_flag,) s
+5 172 M
+(                batch_size=batch_size,) s
+5 161 M
+(                verbose=verbose,) s
+5 150 M
+(                train=train\)) s
+5 128 M
+(            if render_flag:) s
+5 117 M
+(                env.close\(\)) s
+_R
+S
+%%Trailer
+%%Pages: 4
+%%DocumentNeededResources: font Courier-Bold Courier 
+%%EOF
