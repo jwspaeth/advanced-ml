@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 import statistics
+import sys
+import os
+import pickle
 
 import gym
 import matplotlib.pyplot as plt
@@ -9,9 +12,41 @@ import tensorflow.keras as keras
 
 from models import cnn
 from agents import DQN, TargetDQN
-from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
+from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy_car_generator
+
+def save_results_and_models(agent, agent_folder, trial_name):
+    fbase = "results/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase = "{}/".format(fbase + agent_folder)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase = "{}/".format(fbase + trial_name)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+
+    results = {}
+    results["rewards"] = agent.reward_log
+    results["losses"] = agent.loss_log
+    print("Reward log length: {}".format(len(results["rewards"])))
+    print("Loss log length: {}".format(len(results["losses"])))
+
+    # Save full results binary
+    with open("{}results_dict.pkl".format(fbase), "wb") as f:
+        pickle.dump(results, f)
+
+    if agent.type == "DQN":
+        agent.model.save("{}model.h5".format(fbase))
+    elif agent.type == "TargetDQN":
+        agent.model.save("{}model.h5".format(fbase))
+        agent.target_model.save("{}target_model.h5".format(fbase))
 
 def main():
+
+    agent_folder = sys.argv[1]
+    trial_name = sys.argv[2]
+
+    keras.backend.clear_session()
 
     # Create environment
     env = gym.make('CarRacing-v0')
@@ -24,10 +59,10 @@ def main():
     agent_class = DQN
     state_size = env.observation_space.shape
     action_size = env.action_space.shape
-    policy = epsilon_greedy_policy
+    policy = epsilon_greedy_policy_car_generator([[-1, 2], [0, 2], [0, 2]])
     loss_fn = keras.losses.mean_squared_error
     epsilon = epsilon_episode_decay(1, .01, 200)
-    gamma = .95
+    gamma = .99
     buffer_size = 10000
     model_fn = cnn
     model_param_dict = {
@@ -48,7 +83,7 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes_n_episodes = 20
+    silent_episodes_n_episodes = 1
     silent_episodes_n_steps = None
     silent_episodes_render_flag = False
     silent_episodes_batch_size = 2000
@@ -58,7 +93,7 @@ def main():
     visible_episodes = CN()
     visible_episodes_n_episodes = 1
     visible_episodes_n_steps = None
-    visible_episodes_render_flag = True
+    visible_episodes_render_flag = False
     visible_episodes_batch_size = 2000
     visible_episodes_verbose = True
 
@@ -99,34 +134,11 @@ def main():
         n_steps=visible_episodes_n_steps,
         render_flag=visible_episodes_render_flag,
         batch_size=visible_episodes_batch_size,
-        verbose=visible_episodes_verbose
+        verbose=visible_episodes_verbose,
+        train=False
         )
 
-    # Plot results
-    print("--Plotting--")
-    fig, axs = plt.subplots(2, 2)
-    
-    # Take mean over last 100 episodes
-    if len(agent.reward_log) >= 100:
-        cut = 100
-    else:
-        cut = len(agent.reward_log)
-    axs[0, 0].plot(agent.reward_log, label="Agent {} -- Avg: {:.2f}".format(agent.type,
-        statistics.mean(agent.reward_log[len(agent.reward_log)-cut:])))
-    #axs[0, 0].set_ylim([-550, 50])
-    axs[0, 0].legend()
-    
-    axs[0, 1].plot(agent.deque_log, label="Deque Size")
-    axs[0, 1].legend()
-
-    pad = [0] * agent.learning_delay
-    axs[1, 0].plot(pad + agent.loss_log, label="Loss")
-    axs[1, 0].legend()
-
-    axs[1, 1].plot(agent.epsilon_log, label="Epsilon")
-    axs[1, 1].legend()
-
-    plt.show()
+    save_results_and_models(agent, agent_folder, trial_name)
 
 if __name__ == "__main__":
     main()

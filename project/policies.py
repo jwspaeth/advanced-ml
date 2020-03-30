@@ -16,6 +16,24 @@ def epsilon_greedy_policy_generator(action_low, action_high_plus):
 
     return epsilon_greedy_policy
 
+def epsilon_greedy_policy_car_generator(low_high_list):
+
+    def epsilon_greedy_policy(state, model, epsilon = 0):
+        '''
+        Simple policy which either gets the next action or random action with chance epsilon in cartpole
+        '''
+
+        if np.random.rand() < epsilon:
+            actions = [np.random.randint(low_high[0], high=low_high[1]) for low_high in low_high_list]
+            return actions
+        else:
+            Q_values = model.predict(state[np.newaxis])
+            actions = [np.argmax(np.squeeze(Q_val)) for Q_val in Q_values]
+            return actions
+
+    return epsilon_greedy_policy
+
+
 def random_policy(*args):
     '''
     Randomly chooses an action in cartpole
