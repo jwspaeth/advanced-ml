@@ -205,7 +205,8 @@ class DQN:
         while (n_steps is None or step < n_steps) and not done: # Continue till step count, or until done
 
             if render_flag: # Create visualization for environment
-                env.render()
+                rgb_array = env.render(mode="rgb_array")
+                print("RGB Array: {}".format(rgb_array))
 
             state, reward, done, info = self.play_one_step(env, state) # Custom step function
             reward_total += reward

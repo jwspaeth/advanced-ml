@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 from yacs.config import CfgNode as CN
 import tensorflow.keras as keras
 
-from models import cnn
+from models import cnn, dnn
 from agents import DQN, TargetDQN
 from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy_car_generator
+from policies import epsilon_greedy_policy_generator
 
 def save_results_and_models(agent, agent_folder, trial_name):
     fbase = "results/"
@@ -49,7 +50,7 @@ def main():
     keras.backend.clear_session()
 
     # Create environment
-    env = gym.make('CarRacing-v0')
+    env = gym.make('CartPole-v1')
     print("State space: {}".format(env.observation_space))
     print("State space shape: {}".format(env.observation_space.shape))
     print("Action space: {}".format(env.action_space)) # Steer (-1, 1), Gas (0, 1), Brake (0, 1)
@@ -59,22 +60,16 @@ def main():
     agent_class = DQN
     state_size = env.observation_space.shape
     action_size = env.action_space.shape
-    policy = epsilon_greedy_policy_car_generator([[-1, 2], [0, 2], [0, 2]])
+    policy = epsilon_greedy_policy_generator(0, 2)
     loss_fn = keras.losses.mean_squared_error
     epsilon = epsilon_episode_decay(1, .01, 200)
-    gamma = .99
+    gamma = .95
     buffer_size = 10000
-    model_fn = cnn
+    model_fn = dnn
     model_param_dict = {
             "input_size": state_size,
-            "filters": [10, 15],
-            "kernels": [3, 3],
-            "strides": [2, 2],
-            "max_pool_sizes": [2, 2],
-            "cnn_l2": 0,
-            "dnn_hidden_sizes": [20],
-            "dnn_l2": 0,
-            "n_options": [3, 2, 2]
+            "hidden_sizes": [20],
+            "n_options": [2]
             }
     learning_rate = .001
     learning_delay = 0
@@ -83,7 +78,7 @@ def main():
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes_n_episodes = 1
+    silent_episodes_n_episodes = 500
     silent_episodes_n_steps = None
     silent_episodes_render_flag = False
     silent_episodes_batch_size = 2000

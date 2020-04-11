@@ -39,7 +39,7 @@ def plot_agent(agent_folder):
     avg = round(np.mean(average_rewards[len(average_rewards)-100-1:]), 2)
     axs[0].plot(average_rewards, color="r", alpha=.7, label="100 Ep. Avg.: {}".format(avg))
     axs[0].set_title("Rewards")
-    axs[0].set_ylim([-550, 50])
+    axs[0].set_ylim([-50, 550])
     axs[0].legend()
 
     '''

@@ -120,6 +120,9 @@ class DQN:
         batch["next_states"] = np.stack(batch["next_states"], axis=0)
         batch["actions"] = np.stack(batch["actions"], axis=0)
 
+        if len(batch["actions"].shape) == 1:
+            batch["actions"] = np.expand_dims(batch["actions"], axis=1)
+
         return batch
 
     def get_current_Q_values(self, states):
@@ -144,13 +147,14 @@ class DQN:
         # Fetch batch
         batch_inds = self.sample_experience_inds(batch_size)
         batch = self.sample_experience(batch_inds)
-        print("\tBatching elapsed time: {}".format(time.time()-batch_start_time))
 
         learning_start_time = time.time()
 
         # Get number of simultaneous actions
         n_actions = len(self.model.outputs)
         next_Q_values_all_actions = self.get_next_Q_values(batch["next_states"])
+        if type(next_Q_values_all_actions) != list:
+            next_Q_values_all_actions = [next_Q_values_all_actions]
         max_next_Q_values_all_actions = [np.max(next_Q_values, axis=1) for next_Q_values in next_Q_values_all_actions]
         target_Q_values_all_actions = [(batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
                                         for max_next_Q_values in max_next_Q_values_all_actions]
@@ -171,31 +175,6 @@ class DQN:
             self.loss_log.append(loss) # Append to log
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
-
-        print("\tLearning elapsed time: {}".format(time.time()-learning_start_time))
-        print("\tTotal elapsed time: {}".format(time.time()-start_time))
-
-
-    def learning_step_mod(self, batch_size=100):
-        '''
-        Train the model with one batch by sampling from replay buffer
-        Use the model.fit method
-        '''
-
-        # Fetch batch
-        batch_inds = self.sample_experience_inds(batch_size)
-        batch = self.sample_experience(batch_inds)
-
-        # Get action mask
-        mask = tf.one_hot(batch["actions"], self.action_size)
-
-        # Get current q values
-        current_Q_values = self.get_current_Q_values(batch["states"])
-
-        # Create target q values, with mask to disregard irrelevant actions
-        next_Q_values = self.get_next_Q_values(batch["next_states"]) # Get subsequent Q values
-        max_next_Q_values = np.max(next_Q_values, axis=1) # Get max of subsequent Q values
-        target_Q_values = (batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values) # Define Q targets
 
     def execute_episode(self, env, n_steps=None, render_flag=False, batch_size=100, verbose=False,
         train=True):
