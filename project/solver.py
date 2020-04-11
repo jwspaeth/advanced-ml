@@ -51,6 +51,7 @@ def main():
 
     # Create environment
     env = gym.make('CartPole-v1')
+
     print("State space: {}".format(env.observation_space))
     print("State space shape: {}".format(env.observation_space.shape))
     print("Action space: {}".format(env.action_space)) # Steer (-1, 1), Gas (0, 1), Brake (0, 1)

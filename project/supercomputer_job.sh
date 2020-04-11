@@ -9,6 +9,6 @@
 #SBATCH --job-name=subprocess_%j
 #SBATCH --mail-user=john.w.spaeth-1@ou.edu
 #SBATCH --mail-type=ALL
-#SBATCH --chdir=/home/jwspaeth/workspaces/advanced-ml/homework_5/
+#SBATCH --chdir=/home/jwspaeth/workspaces/advanced-ml/project/
 
 python3 solver.py $@
