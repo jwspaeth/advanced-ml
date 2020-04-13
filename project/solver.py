@@ -89,7 +89,7 @@ def save_results_and_models(agent, agent_folder, trial_name):
 
     if agent.type == "DQN":
         agent.model.save("{}model.h5".format(fbase))
-    elif agent.type == "TargetDQN":
+    elif agent.type == "TargetDQN" or agent.type == "DoubleDQN":
         agent.model.save("{}model.h5".format(fbase))
         agent.target_model.save("{}target_model.h5".format(fbase))
 
@@ -105,22 +105,22 @@ def main():
 
     print("State space: {}".format(env.observation_space))
     print("State space shape: {}".format(env.observation_space.shape))
-    print("Action space: {}".format(env.action_space)) # Steer (-1, 1), Gas (0, 1), Brake (0, 1)
+    print("Action space: {}".format(env.action_space))
     print("Action space shape: {}".format(env.action_space.shape))
 
     # Create agent configuration
-    agent_class = DoubleDQN
+    agent_class = DQN
     state_size = env.observation_space.shape
     action_size = env.action_space.shape
     policy = epsilon_greedy_policy_generator(0, 2)
     loss_fn = keras.losses.mean_squared_error
     epsilon = epsilon_episode_decay(1, .01, 300)
-    gamma = .95
-    buffer_size = 10000
+    gamma = .99
+    buffer_size = 100000
     model_fn = dnn
     model_param_dict = {
             "input_size": state_size,
-            "hidden_sizes": [24, 24],
+            "hidden_sizes": [15],
             "hidden_act": "relu",
             "n_options": [2]
             }
@@ -134,7 +134,7 @@ def main():
     silent_episodes_n_episodes = 1000
     silent_episodes_n_steps = None
     silent_episodes_render_flag = False
-    silent_episodes_batch_size = 2000
+    silent_episodes_batch_size = 32
     silent_episodes_verbose = True
 
     # Create visible episodes configuration
@@ -142,7 +142,7 @@ def main():
     visible_episodes_n_episodes = 1
     visible_episodes_n_steps = None
     visible_episodes_render_flag = False
-    visible_episodes_batch_size = 2000
+    visible_episodes_batch_size = 32
     visible_episodes_verbose = True
 
     # Build agent
