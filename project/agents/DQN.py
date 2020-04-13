@@ -152,12 +152,20 @@ class DQN:
 
         # Get number of simultaneous actions
         n_actions = len(self.model.outputs)
+
+        # Get the next Q values from the next state
         next_Q_values_all_actions = self.get_next_Q_values(batch["next_states"])
         if type(next_Q_values_all_actions) != list:
             next_Q_values_all_actions = [next_Q_values_all_actions]
+
+        # Take the max of all next Q value action sets
         max_next_Q_values_all_actions = [np.max(next_Q_values, axis=1) for next_Q_values in next_Q_values_all_actions]
+
+        # Compute the target Q values
         target_Q_values_all_actions = [(batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
                                         for max_next_Q_values in max_next_Q_values_all_actions]
+
+        # Construct mask to hide irrelevant actions
         mask_all_actions = [tf.one_hot(batch["actions"][:, action], self.n_options[action])
                             for action in range(n_actions)]
 
