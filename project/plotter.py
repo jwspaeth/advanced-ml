@@ -30,6 +30,7 @@ def plot_agent(agent_folder):
 
     # Create fig
     fig, axs = plt.subplots(1, 2)
+    fig.suptitle("{}".format(agent_folder))
 
     # Plot rewards
     for i in range(rewards.shape[0]):
@@ -37,11 +38,13 @@ def plot_agent(agent_folder):
     
     # Plot average reward
     avg = round(np.mean(average_rewards[len(average_rewards)-100-1:]), 2)
-    axs[0].plot(average_rewards, color="r", alpha=.7, label="100 Ep. Avg.: {}".format(avg))
+    axs[0].plot(average_rewards, color="r", alpha=.7, label="100 Ep. Avg.: {}\nFull avg: {}".format(avg, 
+        round(np.mean(average_rewards), 2)))
     axs[0].set_title("Rewards")
     axs[0].set_ylim([-50, 550])
     axs[0].legend()
 
+    
     # Plot losses
     for i in range(losses.shape[0]):
         axs[1].plot(losses[i], color="b", alpha=.5)
@@ -50,6 +53,7 @@ def plot_agent(agent_folder):
     axs[1].plot(average_losses, color="r", alpha=.7)
     axs[1].set_title("Losses")
     axs[1].legend()
+    
 
     plt.show()
 

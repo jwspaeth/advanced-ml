@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from yacs.config import CfgNode as CN
 import tensorflow.keras as keras
 
-from models import cnn, dnn
+from models import cnn, dnn, dueling_dnn
 from agents import DQN, TargetDQN, DoubleDQN
 from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy_car_generator
 from policies import epsilon_greedy_policy_generator
@@ -115,12 +115,12 @@ def main():
     policy = epsilon_greedy_policy_generator(0, 2)
     loss_fn = keras.losses.mean_squared_error
     epsilon = epsilon_episode_decay(1, .01, 300)
-    gamma = .99
+    gamma = .97
     buffer_size = 100000
-    model_fn = dnn
+    model_fn = dueling_dnn
     model_param_dict = {
             "input_size": state_size,
-            "hidden_sizes": [15],
+            "hidden_sizes": [15, 15],
             "hidden_act": "relu",
             "n_options": [2]
             }
