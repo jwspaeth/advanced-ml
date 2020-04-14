@@ -180,7 +180,7 @@ class DQN:
                 Q_values = tf.reduce_sum(masked_Q_values, axis=1) # Get the sum to reduce to action taken
                 loss += tf.reduce_mean(self.loss_fn(target_Q_values_all_actions[action], Q_values)) # Compute the losses
 
-            self.loss_log.append(loss) # Append to log
+            self.loss_log.append(loss.numpy()) # Append to log
             grads = tape.gradient(loss, self.model.trainable_variables) # Compute the gradients
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables)) # Apply the gradients to the model
 

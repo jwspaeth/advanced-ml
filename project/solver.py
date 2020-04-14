@@ -109,7 +109,7 @@ def main():
     print("Action space shape: {}".format(env.action_space.shape))
 
     # Create agent configuration
-    agent_class = DQN
+    agent_class = TargetDQN
     state_size = env.observation_space.shape
     action_size = env.action_space.shape
     policy = epsilon_greedy_policy_generator(0, 2)
@@ -127,11 +127,11 @@ def main():
     learning_rate = .001
     learning_delay = 0
     verbose = True
-    target_update_freq = 25
+    target_update_freq = 100
 
     # Create silent episode configuration
     silent_episodes = CN()
-    silent_episodes_n_episodes = 1000
+    silent_episodes_n_episodes = 2000
     silent_episodes_n_steps = None
     silent_episodes_render_flag = False
     silent_episodes_batch_size = 32
