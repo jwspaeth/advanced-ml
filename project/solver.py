@@ -6,8 +6,8 @@ import os
 import pickle
 
 import gym
+from gym import wrappers
 import matplotlib.pyplot as plt
-from yacs.config import CfgNode as CN
 import tensorflow.keras as keras
 
 from models import cnn, dnn, dueling_dnn
@@ -16,15 +16,7 @@ from policies import epsilon_episode_decay, random_policy, epsilon_greedy_policy
 from policies import epsilon_greedy_policy_generator, epsilon_greedy_policy_lunar_lander
 
 def save_results_and_models(agent, agent_folder, trial_name):
-    fbase = "results/"
-    if not os.path.exists(fbase):
-        os.mkdir(fbase)
-    fbase = "{}/".format(fbase + agent_folder)
-    if not os.path.exists(fbase):
-        os.mkdir(fbase)
-    fbase = "{}/".format(fbase + trial_name)
-    if not os.path.exists(fbase):
-        os.mkdir(fbase)
+    fbase = setup_results_directory(agent_folder, trial_name)
 
     results = {}
     results["rewards"] = agent.reward_log
@@ -42,103 +34,86 @@ def save_results_and_models(agent, agent_folder, trial_name):
         agent.model.save("{}model.h5".format(fbase))
         agent.target_model.save("{}target_model.h5".format(fbase))
 
+def setup_results_directory(agent_folder, trial_name):
+    fbase = "results/"
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase = "{}/".format(fbase + agent_folder)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+    fbase = "{}/".format(fbase + trial_name)
+    if not os.path.exists(fbase):
+        os.mkdir(fbase)
+
+    return fbase
+
 def main():
 
+    # Get arguments and setup results directory
     agent_folder = sys.argv[1]
     trial_name = sys.argv[2]
+    fbase = setup_results_directory(agent_folder, trial_name)
 
+    # Clear any models that may have previously existed this session
     keras.backend.clear_session()
 
     # Create environment
     env = gym.make('CartPole-v1')
-    #env = gym.wrappers.Monitor("CartPole-v1", "results/V5/trial_15/")
+    if "-v" in sys.argv:
+        env = wrappers.Monitor(env, fbase)
 
+    # Print information about environment
     print("State space: {}".format(env.observation_space))
     print("State space shape: {}".format(env.observation_space.shape))
     print("Action space: {}".format(env.action_space))
     print("Action space shape: {}".format(env.action_space.shape))
 
     # Create agent configuration
-    agent_class = DQN
-    state_size = env.observation_space.shape
-    action_size = env.action_space.shape
-    policy = epsilon_greedy_policy_generator(0, 2)
-    #policy = epsilon_greedy_policy_lunar_lander
-    loss_fn = keras.losses.mean_squared_error
-    epsilon = epsilon_episode_decay(1, .01, 200)
-    gamma = .99
-    buffer_size = 100000
-    model_fn = dnn
-    model_param_dict = {
-            "input_size": state_size,
+    agent_config = {
+        "agent_class": DQN,
+        "state_size": env.observation_space.shape,
+        "action_size": env.action_space.shape,
+        "policy": epsilon_greedy_policy_generator(0, 2),
+        "loss_fn": keras.losses.mean_squared_error,
+        "epsilon": epsilon_episode_decay(1, .01, 200),
+        "gamma": .99,
+        "buffer_size": 10000,
+        "model_fn": dnn,
+        "model_param_dict": {
+            "input_size": env.observation_space.shape,
             "hidden_sizes": [15, 15],
             "hidden_act": "relu",
             "n_options": [2]
-            }
-    learning_rate = .001
-    learning_delay = 0
-    verbose = True
-    reload_path = "results/V5/trial_29/model.h5"
-    target_update_freq = 100
+        },
+        "learning_rate": .001,
+        "learning_delay": 0,
+        "verbose": True,
+        "reload_path": None,
+        "target_update_freq": 25
+    }
 
     # Create silent episode configuration
-    silent_episodes = CN()
-    silent_episodes_n_episodes = 0
-    silent_episodes_n_steps = None
-    silent_episodes_render_flag = False
-    silent_episodes_batch_size = 32
-    silent_episodes_verbose = True
-
-    # Create visible episodes configuration
-    visible_episodes = CN()
-    visible_episodes_n_episodes = 2
-    visible_episodes_n_steps = None
-    visible_episodes_render_flag = True
-    visible_episodes_batch_size = 32
-    visible_episodes_verbose = True
+    execution_config = {
+        "env": env,
+        "n_episodes": 10,
+        "n_steps": None,
+        "render_flag": False,
+        "batch_size": 32,
+        "verbose": True,
+        "train": True
+    }
 
     # Build agent
-    agent = agent_class(
-        state_size=state_size,
-        action_size=action_size,
-        policy=policy,
-        loss_fn=loss_fn,
-        epsilon=epsilon,
-        gamma=gamma,
-        buffer_size=buffer_size,
-        model_fn=model_fn,
-        model_param_dict=model_param_dict,
-        learning_rate=learning_rate,
-        learning_delay=learning_delay,
-        verbose=verbose,
-        reload_path=reload_path,
-        target_update_freq=target_update_freq
-        )
+    agent = agent_config["agent_class"](**agent_config)
 
+    # Print training start signal
     print("--Training--")
     print("\tAgent type: {}".format(agent.type))
 
     # Run silent episodes
-    agent.execute_episodes(
-        env=env,
-        n_episodes=silent_episodes_n_episodes,
-        n_steps=silent_episodes_n_steps,
-        render_flag=silent_episodes_render_flag,
-        batch_size=silent_episodes_batch_size,
-        verbose=silent_episodes_verbose
-        )
+    agent.execute_episodes(**execution_config)
 
-    # Run visible episodes
-    agent.execute_episodes(
-        env=env,
-        n_episodes=visible_episodes_n_episodes,
-        n_steps=visible_episodes_n_steps,
-        render_flag=visible_episodes_render_flag,
-        batch_size=visible_episodes_batch_size,
-        verbose=visible_episodes_verbose,
-        train=False
-        )
-
+    # Cache results
     save_results_and_models(agent, agent_folder, trial_name)
 
 if __name__ == "__main__":
