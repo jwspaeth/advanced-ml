@@ -1,6 +1,14 @@
 
 import numpy as np
 
+def epsilon_greedy_policy_lunar_lander(state, model, epsilon = 0):
+
+    if np.random.rand() < epsilon:
+        return np.random.randint(0, high=4)
+    else:
+        Q_values = model.predict(state[np.newaxis])
+        return np.argmax(Q_values[0])
+
 def epsilon_greedy_policy_generator(action_low, action_high_plus):
 
     def epsilon_greedy_policy(state, model, epsilon = 0):

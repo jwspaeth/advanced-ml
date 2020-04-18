@@ -31,7 +31,6 @@ def plot_agent(agent_folder):
     # Create fig
     fig, axs = plt.subplots(1, 2)
     fig.suptitle("{}".format(agent_folder))
-    #fig.suptitle("Best TargetDQN")
 
     # Plot rewards
     for i in range(rewards.shape[0]):
@@ -43,7 +42,7 @@ def plot_agent(agent_folder):
         round(np.mean(average_rewards), 2)))
     axs[0].set_title("Rewards")
     axs[0].set_xlabel("Epoch")
-    axs[0].set_ylim([-50, 550])
+    axs[0].set_ylim([-1500, 250])
     axs[0].legend()
 
     

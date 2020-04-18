@@ -8,15 +8,13 @@ import tensorflow.keras as keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import InputLayer, Dense
 
-# 
-
 class DQN:
     '''
     Baseline Deep Q-Network with experience replay
     '''
 
     def __init__(self, state_size, action_size, policy, learning_delay, loss_fn, epsilon, gamma,
-        learning_rate, buffer_size, model_fn, model_param_dict, verbose=False, **kwargs):
+        learning_rate, buffer_size, model_fn, model_param_dict, verbose=False, reload_path=None, **kwargs):
         '''
         Initialize necessary fields
         '''
@@ -31,6 +29,7 @@ class DQN:
         self.gamma = gamma
         self.optimizer = keras.optimizers.Adam(lr=learning_rate)
         self.n_options = model_param_dict["n_options"]
+        self.reload_path = reload_path
         self.setup_model(model_fn, model_param_dict)
 
         self.epsilon_log = []
@@ -55,7 +54,12 @@ class DQN:
         print("Model function: {}".format(model_fn))
         print("Model parameter dictionary: {}".format(model_param_dict))
 
-        self.model = model_fn(**model_param_dict)
+        if self.reload_path is None:
+            print("Build model from scratch")
+            self.model = model_fn(**model_param_dict)
+        else:
+            print("Reload model from file")
+            self.model = keras.models.load_model(self.reload_path)
         self.model.summary()
         print("Model inputs: {}".format(self.model.inputs))
         print("Model outputs: {}".format(self.model.outputs))
@@ -235,5 +239,7 @@ class DQN:
                 verbose=verbose,
                 train=train)
 
+            '''
             if render_flag:
                 env.close()
+            '''
