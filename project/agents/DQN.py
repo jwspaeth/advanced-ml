@@ -168,6 +168,7 @@ class DQN:
         # Compute the target Q values
         target_Q_values_all_actions = [(batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
                                         for max_next_Q_values in max_next_Q_values_all_actions]
+        #target_Q_values_all_actions = [target.reshape(-1, 1) for target in target_Q_values_all_actions]
 
         # Construct mask to hide irrelevant actions
         mask_all_actions = [tf.one_hot(batch["actions"][:, action], self.n_options[action])
@@ -195,9 +196,9 @@ class DQN:
         '''
 
         # Initialize vars
-        reward_total = 0
-        step = 0
-        done = False
+        reward_total = 0 # Tracks reward sum for episode
+        step = 0 # Tracks episode step
+        done = False # Tracks whether episode has ended or not
         state = env.reset()
         while (n_steps is None or step < n_steps) and not done: # Continue till step count, or until done
 
@@ -210,12 +211,25 @@ class DQN:
             if done:
                 break
 
+        # If this is the first episode or this reward total is better than any previous, set the
+        #   values to their current iteration
+        # Downside: One episode could have good performance as a result of a good stochastic environment
+        #   reset. A better alternative would be to take a running average of performance over many episodes, and saving
+        #   when that average is better than any previous average.
+        if self.episode == 0 or reward_total > self.best_reward_total:
+            self.best_reward_total = reward_total
+            self.best_weights = self.model.get_weights()
+            self.best_episode = self.episode
+
         # If train flag and episode above some threshold (to fill buffer), train
         if train and self.episode > self.learning_delay: 
             self.learning_step(batch_size=batch_size)
 
+        # Verbose information
         if verbose:
             print("\tReward: {}".format(reward_total))
+
+        # Log relevant data and increment episode
         self.reward_log.append(reward_total)
         self.epsilon_log.append(self.get_epsilon())
         self.deque_log.append(len(self.replay_buffer["states"]))
@@ -239,7 +253,4 @@ class DQN:
                 verbose=verbose,
                 train=train)
 
-            '''
-            if render_flag:
-                env.close()
-            '''
+        self.model.set_weights(self.best_weights)

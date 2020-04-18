@@ -42,7 +42,7 @@ def plot_agent(agent_folder):
     axs[0].plot(average_rewards, color="r", alpha=.7, label="100 Ep. Avg.: {}\nFull avg: {}".format(avg, 
         round(np.mean(average_rewards), 2)))
     axs[0].set_title("Rewards")
-    axs[0].set_xlabel("Epoch")
+    axs[0].set_xlabel("Episode")
     axs[0].set_ylim([-50, 550])
     axs[0].legend()
 
@@ -54,10 +54,9 @@ def plot_agent(agent_folder):
     # Plot average losses
     axs[1].plot(average_losses, color="r", alpha=.7)
     axs[1].set_title("Losses")
-    axs[1].set_xlabel("Epoch")
+    axs[1].set_xlabel("Episode")
     axs[1].legend()
     
-
     plt.show()
 
 if __name__ == "__main__":

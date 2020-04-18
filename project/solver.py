@@ -24,6 +24,11 @@ def save_results_and_models(agent, agent_folder, trial_name):
     print("Reward log length: {}".format(len(results["rewards"])))
     print("Loss log length: {}".format(len(results["losses"])))
 
+    # Save best results
+    with open("{}best_results.txt".format(fbase), "w") as f:
+        f.write("Best episode: {}\n".format(agent.best_episode))
+        f.write("Best reward total: {}\n".format(agent.best_reward_total))
+
     # Save full results binary
     with open("{}results_dict.pkl".format(fbase), "wb") as f:
         pickle.dump(results, f)
@@ -75,14 +80,14 @@ def main():
         "action_size": env.action_space.shape,
         "policy": epsilon_greedy_policy_generator(0, 2),
         "loss_fn": keras.losses.mean_squared_error,
-        "epsilon": epsilon_episode_decay(1, .01, 200),
-        "gamma": .99,
-        "buffer_size": 10000,
+        "epsilon": epsilon_episode_decay(1, .01, 500),
+        "gamma": .95,
+        "buffer_size": 2000,
         "model_fn": dnn,
         "model_param_dict": {
             "input_size": env.observation_space.shape,
-            "hidden_sizes": [15, 15],
-            "hidden_act": "relu",
+            "hidden_sizes": [32, 32],
+            "hidden_act": "elu",
             "n_options": [2]
         },
         "learning_rate": .001,
@@ -115,6 +120,9 @@ def main():
 
     # Cache results
     save_results_and_models(agent, agent_folder, trial_name)
+
+    # Close environment
+    env.close()
 
 if __name__ == "__main__":
     main()
