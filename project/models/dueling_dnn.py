@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Input, Dense
 
 from custom_layers import pipe_model, hidden_stack
 
-def dueling_dnn(input_size, hidden_sizes, n_options, hidden_act="elu", output_act="linear", dropout=0, l2=0):
+def dueling_dnn(input_size, hidden_sizes, n_options, hidden_act="elu", output_act="linear", dropout=0, l2=0, **kwargs):
     """Construct a simple deep neural network"""
 
     inputs = Input(shape=input_size)
