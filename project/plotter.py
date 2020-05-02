@@ -43,7 +43,7 @@ def plot_agent(agent_folder):
         round(np.mean(average_rewards), 2)))
     axs[0].set_title("Rewards")
     axs[0].set_xlabel("Episode")
-    axs[0].set_ylim([-50, 550])
+    #axs[0].set_ylim([-50, 550])
     axs[0].legend()
 
     

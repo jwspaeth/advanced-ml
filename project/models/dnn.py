@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Input, Dense
 
 from custom_layers import pipe_model, hidden_stack
 
-def dnn(input_size, hidden_sizes, n_options, hidden_act="elu", output_act="linear", dropout=0, l2=0):
+def dnn(input_size, hidden_sizes, n_options, hidden_act="elu", output_act="linear", dropout=0, l2=0, **kwargs):
     """Construct a simple deep neural network"""
 
     inputs = Input(shape=input_size)
@@ -17,7 +17,7 @@ def dnn(input_size, hidden_sizes, n_options, hidden_act="elu", output_act="linea
 
     # Add hidden layers with respective dropout and l2 values
     layers.append(
-        hidden_stack(hidden_sizes, hidden_act, dropout=dropout, l2=l2)
+        hidden_stack(hidden_sizes, hidden_act=hidden_act, dropout=dropout, l2=l2)
         )
 
     intermediate = pipe_model(inputs, layers)

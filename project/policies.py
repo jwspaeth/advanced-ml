@@ -56,3 +56,16 @@ def epsilon_episode_decay(initial_epsilon, min_epsilon, rate=500):
 
     # Decay epsilon to some min value according to episode
     return lambda episode: max(initial_epsilon - episode / rate, min_epsilon)
+
+
+def epsilon_exponential_decay(initial_epsilon, min_epsilon, rate=.995):
+    '''
+    Linearly decays epsilon
+    '''
+
+    # Decay epsilon to some min value according to episode
+    return lambda episode: max(initial_epsilon * (rate**episode), min_epsilon)
+
+
+
+

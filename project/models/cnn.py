@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Input, Dense, Flatten, BatchNormalization
 from custom_layers import pipe_model, hidden_stack, conv_stack_2d
 
 def cnn(input_size, filters, kernels, strides, max_pool_sizes, cnn_l2,
-    dnn_hidden_sizes, dnn_l2, n_options):
+    dnn_hidden_sizes, dnn_l2, n_options, **kwargs):
     """Construct a simple convolutional neural network"""
 
     inputs = Input(shape=input_size)
