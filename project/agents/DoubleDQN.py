@@ -1,6 +1,4 @@
 
-import time
-
 import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
@@ -23,19 +21,14 @@ class DoubleDQN(TargetDQN):
         # Get all info needed outside of gradient tape
         # Start gradient tape
 
-        start_time = time.time()
-        batch_start_time = time.time()
         # Fetch batch
-        batch_inds = self.sample_experience_inds(batch_size)
-        batch = self.sample_experience(batch_inds)
-
-        learning_start_time = time.time()
+        batch = self.sample_experience(batch_size)
 
         # Get number of simultaneous actions
         n_actions = len(self.model.outputs)
 
         # Get the next online Q values from the next state 
-        next_online_Q_values_all_actions = self.model.predict(batch["next_states"])
+        next_online_Q_values_all_actions = self.model.predict(batch["next_state"])
         if type(next_online_Q_values_all_actions) != list:
             next_online_Q_values_all_actions = [next_online_Q_values_all_actions]
 
@@ -46,7 +39,7 @@ class DoubleDQN(TargetDQN):
         all_next_masks = [tf.one_hot(next_Q_argmax, self.n_options[i]).numpy()
             for i, next_Q_argmax in enumerate(next_Q_values_argmaxes)]
 
-        next_target_Q_values_all_actions = self.target_model.predict(batch["next_states"])
+        next_target_Q_values_all_actions = self.target_model.predict(batch["next_state"])
         if type(next_target_Q_values_all_actions) != list:
             next_target_Q_values_all_actions = [next_target_Q_values_all_actions]
 
@@ -55,17 +48,19 @@ class DoubleDQN(TargetDQN):
             for next_target_Q_values, next_masks in zip(next_target_Q_values_all_actions, all_next_masks)]
 
         # Compute the target Q values
-        target_Q_values_all_actions = [(batch["rewards"] + (1 - np.asarray(batch["dones"])) * self.gamma * max_next_Q_values)
+        target_Q_values_all_actions = [(batch["reward"] + (1 - np.asarray(batch["done"])) * self.gamma * max_next_Q_values)
                                         for max_next_Q_values in max_next_Q_values_all_actions]
 
         # Construct mask to hide irrelevant actions
-        mask_all_actions = [tf.one_hot(batch["actions"][:, action], self.n_options[action])
+        mask_all_actions = [tf.one_hot(batch["action"][:, action], self.n_options[action])
                             for action in range(n_actions)]
 
         # Use optimizer to apply gradient to model
         with tf.GradientTape() as tape:
             loss = 0
-            all_Q_values_all_actions = self.get_current_Q_values(batch["states"]) # Get all possible q values from the states
+            all_Q_values_all_actions = self.get_current_Q_values(batch["state"]) # Get all possible q values from the states
+            if type(all_Q_values_all_actions) != list:
+                all_Q_values_all_actions = [all_Q_values_all_actions]
 
             # Aggregate loss for all actions
             for action in range(n_actions):
