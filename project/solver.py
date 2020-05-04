@@ -37,8 +37,6 @@ def save_results_and_models(agent, agent_folder, trial_name):
     with open("{}results_dict.pkl".format(fbase), "wb") as f:
         pickle.dump(results, f)
 
-    print("Saving these model weights: {}".format(agent.model.get_weights()[0]))
-
     '''
     if agent.type == "DQN":
         agent.model.save("{}model".format(fbase))
@@ -81,8 +79,8 @@ def main():
     keras.backend.clear_session()
 
     # Create environment
-    env = gym.make("CartPole-v1")
-    #env = gym.make('LunarLander-v2')
+    #env = gym.make("CartPole-v1")
+    env = gym.make('LunarLander-v2')
     if "-v" in sys.argv:
         env = wrappers.Monitor(env, fbase)
 
@@ -97,34 +95,34 @@ def main():
         "agent_class": DQN,
         "state_size": env.observation_space.shape,
         "action_size": env.action_space.shape,
-        "policy": epsilon_greedy_policy_generator(0, 2),
+        "policy": epsilon_greedy_policy_generator(0, 4),
         "loss_fn": keras.losses.mean_squared_error,
         "epsilon": epsilon_episode_decay(1, .01, 500),
         #"epsilon": 0,
-        "gamma": .95,
-        "buffer_size": 100000,
+        "gamma": .99,
+        "buffer_size": 500000,
         "model_config": {
             "model_fn": "dnn",
             "input_size": env.observation_space.shape,
-            "hidden_sizes": [20, 15, 10],
-            "hidden_act": "elu",
-            "n_options": [2]
+            "hidden_sizes": [512, 256, 4],
+            "hidden_act": "relu",
+            "n_options": [4]
         },
         "learning_rate": .001,
         "learning_delay": 50,
         "verbose": True,
         "reload_path": None,
-        "target_update_freq": 25
+        "target_update_freq": 75
     }
     print("Agent config: {}".format(agent_config))
 
     # Create silent episode configuration
     execution_config = {
         "env": env,
-        "n_episodes": 2000,
+        "n_episodes": 60,
         "n_steps": None,
         "render_flag": False,
-        "batch_size": 2000,
+        "batch_size": 64,
         "verbose": True,
         "train": True
     }
@@ -136,6 +134,7 @@ def main():
     # Print training start signal
     print("--Training--")
     print("\tAgent type: {}".format(agent.type))
+    print("\tPython type: {}".format(type(agent)))
 
     # Run silent episodes
     agent.execute_episodes(**execution_config)
