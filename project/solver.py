@@ -97,7 +97,7 @@ def main():
         "action_size": env.action_space.shape,
         "policy": epsilon_greedy_policy_generator(0, 4),
         "loss_fn": keras.losses.mean_squared_error,
-        "epsilon": epsilon_episode_decay(1, .01, 500),
+        "epsilon": epsilon_exponential_decay(1, .01, .995),
         #"epsilon": 0,
         "gamma": .99,
         "buffer_size": 500000,
@@ -138,6 +138,7 @@ def main():
 
     # Run silent episodes
     agent.execute_episodes(**execution_config)
+    print("Number of experiences: {}".format(len(agent.replay_buffer)))
 
     # Cache results
     save_results_and_models(agent, agent_folder, trial_name)
